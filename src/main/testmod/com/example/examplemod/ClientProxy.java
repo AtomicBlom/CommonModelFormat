@@ -1,8 +1,8 @@
 package com.example.examplemod;
 
+import com.github.atomicblom.client.model.cmf.b3d.B3DLoader;
+import com.github.atomicblom.client.model.cmf.opengex.OpenGEXLoader;
 import com.google.common.collect.ImmutableMap;
-import mod.steamnsteel.client.model.b3d.B3DLoader;
-import mod.steamnsteel.client.model.opengex.OpenGEXLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.renderer.entity.Render;
@@ -53,14 +53,14 @@ public class ClientProxy extends CommonProxy
             @SuppressWarnings("deprecation")
             public Render<EntityChest> createRenderFor(RenderManager manager)
             {
-                /*model = ModelLoaderRegistry.getModel(new ResourceLocation(ModelLoaderRegistryDebug.MODID, "block/chest.b3d"));
-                if(model instanceof IRetexturableModel)
+                /*cmf = ModelLoaderRegistry.getModel(new ResourceLocation(ModelLoaderRegistryDebug.MODID, "block/chest.b3d"));
+                if(cmf instanceof IRetexturableModel)
                 {
-                    model = ((IRetexturableModel)model).retexture(ImmutableMap.of("#chest", "entity/chest/normal"));
+                    cmf = ((IRetexturableModel)cmf).retexture(ImmutableMap.of("#chest", "entity/chest/normal"));
                 }
-                if(model instanceof IModelCustomData)
+                if(cmf instanceof IModelCustomData)
                 {
-                    model = ((IModelCustomData)model).process(ImmutableMap.of("mesh", "[\"Base\", \"Lid\"]"));
+                    cmf = ((IModelCustomData)cmf).process(ImmutableMap.of("mesh", "[\"Base\", \"Lid\"]"));
                 }*/
                 ResourceLocation location = new ModelResourceLocation(new ResourceLocation(ExampleMod.MODID, ExampleMod.blockName), "entity");
                 return new RenderLiving<EntityChest>(manager, new AnimationModelBase<EntityChest>(location, new VertexLighterSmoothAo(Minecraft.getMinecraft().getBlockColors()))

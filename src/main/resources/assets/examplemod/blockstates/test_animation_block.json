@@ -17,9 +17,9 @@
     "normal": [{}],
     "inventory": [{
       "transform": "forge:default-block"
-      /*"model": "examplemod:engine",
+      /*"cmf": "examplemod:engine",
       "submodel": {
-        "ring": { "model": "examplemod:engine_ring" }
+        "ring": { "cmf": "examplemod:engine_ring" }
       }*/
     }],
     "facing": {
@@ -35,19 +35,19 @@
         "custom": {
             "mesh": ["Base"]
         }
-        //"model": "examplemod:engine"
+        //"cmf": "examplemod:engine"
       },
       "false": {
         "custom": {
             "mesh": ["Lid"]
         }
-        //"model": "examplemod:engine_ring"
+        //"cmf": "examplemod:engine_ring"
       }
     },
     "entity": [{
-      /*"model": "examplemod:engine",
+      /*"cmf": "examplemod:engine",
       "submodel": {
-        "ring": { "model": "examplemod:engine_ring" }
+        "ring": { "cmf": "examplemod:engine_ring" }
       }*/
     }]
   }

@@ -19,9 +19,6 @@ import net.minecraftforge.common.property.ExtendedBlockState;
 import net.minecraftforge.common.property.IUnlistedProperty;
 import net.minecraftforge.common.property.Properties;
 
-/**
- * Created by codew on 4/05/2016.
- */
 class ChestBlock extends Block
 {
     {
@@ -59,7 +56,7 @@ class ChestBlock extends Block
     @Override
     public int getMetaFromState(IBlockState state)
     {
-        return ((EnumFacing) state.getValue(ExampleMod.FACING)).getIndex();
+        return state.getValue(ExampleMod.FACING).getIndex();
     }
 
     @Override
@@ -79,16 +76,6 @@ class ChestBlock extends Block
     {
         return state.withProperty(Properties.StaticProperty, true);
     }
-
-        /*@Override
-        public IBlockState getExtendedState(IBlockState state, IBlockAccess world, BlockPos pos) {
-            TileEntity te = world.getTileEntity(pos);
-            if(te instanceof Chest && state instanceof IExtendedBlockState)
-            {
-                return ((Chest)te).getState((IExtendedBlockState)state);
-            }
-            return super.getExtendedState(state, world, pos);
-        }*/
 
     @Override
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player, EnumHand hand, ItemStack heldItem, EnumFacing side, float hitX, float hitY, float hitZ)

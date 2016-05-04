@@ -12,9 +12,9 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.model.animation.CapabilityAnimation;
 import net.minecraftforge.common.model.animation.IAnimationStateMachine;
 
-/**
- * Created by codew on 4/05/2016.
- */
+import static com.example.examplemod.ExampleMod.MODID;
+import static com.example.examplemod.ExampleMod.proxy;
+
 public class ChestTileEntity extends TileEntity
 {
     private final IAnimationStateMachine asm;
@@ -24,14 +24,14 @@ public class ChestTileEntity extends TileEntity
 
     public ChestTileEntity()
     {
-        /*asm = proxy.load(new ResourceLocation(MODID.toLowerCase(), "asms/block/chest.json"), ImmutableMap.<String, ITimeValue>of(
+        asm = proxy.load(new ResourceLocation(MODID.toLowerCase(), "asms/block/chest.json"), ImmutableMap.<String, ITimeValue>of(
             "click_time", clickTime
-        ));*/
-        asm = ExampleMod.proxy.load(new ResourceLocation(ExampleMod.MODID.toLowerCase(), "asms/block/engine.json"), ImmutableMap.<String, ITimeValue>of(
+        ));
+        /*asm = ExampleMod.proxy.load(new ResourceLocation(ExampleMod.MODID.toLowerCase(), "asms/block/engine.json"), ImmutableMap.<String, ITimeValue>of(
                 "cycle_length", cycleLength,
                 "click_time", clickTime
                 //"offset", offset
-        ));
+        ));*/
     }
 
     public void handleEvents(float time, Iterable<Event> pastEvents)
@@ -47,10 +47,6 @@ public class ChestTileEntity extends TileEntity
     {
         return true;
     }
-
-    /*public IExtendedBlockState getState(IExtendedBlockState state) {
-        return state.withProperty(B3DFrameProperty.instance, curState);
-    }*/
 
     public void click(boolean sneaking)
     {

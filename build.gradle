@@ -1,0 +1,72 @@
+import org.gradle.plugins.ide.idea.model.*
+
+// define the properties file
+ext.configFile = file "build.properties"
+configFile.withReader {
+    // read config.  it shall from now on be referenced as simply config or as project.config
+    def prop = new Properties()
+    prop.load(it)
+    project.ext.config = new ConfigSlurper().parse prop
+}
+
+// For those who want the bleeding edge
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.1-SNAPSHOT'
+    }
+}
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+/*
+// for people who want stable - not yet functional for MC 1.8.8 - we require the forgegradle 2.1 snapshot
+plugins {
+    id "net.minecraftforge.gradle.forge" version "2.0.2"
+}
+*/
+
+version = "${config.minecraft_version}-${config.api_version}"
+group = config.group_name
+archivesBaseName = config.api_id
+sourceCompatibility = JavaVersion.VERSION_1_6
+targetCompatibility = JavaVersion.VERSION_1_6
+
+minecraft {
+    version = config.minecraft_version + "-" + config.forge_version // grab latest forge
+    runDir = "run"
+    mappings = config.mcp_mappings
+    // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+}
+
+jar {
+    classifier = 'api'
+}
+
+apply plugin: 'maven'
+
+task createPom << {
+    pom {
+        project {
+            groupId project.group
+            artifactId project.archivesBaseName
+            version project.version
+
+            inceptionYear '2016'
+            licenses {
+                license {
+                    name 'MIT License'
+                    url 'http://www.opensource.org/licenses/mit-license.php'
+                    distribution 'repo'
+                }
+            }
+        }
+    }.writeTo(libsDir.path + "/" + project.archivesBaseName + "-" + project.version + ".pom")
+}
+
+build.dependsOn createPom

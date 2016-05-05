@@ -1,8 +1,6 @@
 package com.github.atomicblom.client.model.cmf.opengex;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.*;
 import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
 import net.minecraftforge.common.model.TRSRTransformation;
@@ -21,6 +19,7 @@ public class Parser {
     private static Logger Logger = LogManager.getLogger();
 
     private final InputStream inputStream;
+    private Axis up;
 
     public Parser(InputStream inputStream)
     {
@@ -36,7 +35,7 @@ public class Parser {
         final OgexParser ogexParser = new OgexParser();
         final Reader reader = new InputStreamReader(inputStream);
         final OgexScene ogexScene = ogexParser.parseScene(reader);
-
+        up = ogexScene.getMetrics().getUp();
         getBrushes(ogexScene);
         final Node<?> rootNode = createNode(ogexScene);
 
@@ -53,6 +52,7 @@ public class Parser {
         {
             final Mesh mesh = meshImmutableMultimapPair.getLeft();
             final ImmutableMultimap.Builder<Vertex, Pair<Float, Node<Bone>>> boneWeightMapBuilder = ImmutableMultimap.builder();
+            final ImmutableSet.Builder<Node<Bone>> boneListBuilder = ImmutableSet.builder();
             for (final Map.Entry<Vertex, Pair<Float, OgexBoneNode>> vertexPairEntry : meshImmutableMultimapPair.getRight().entries())
             {
                 final Vertex vertex = vertexPairEntry.getKey();
@@ -62,17 +62,30 @@ public class Parser {
                 final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode);
                 boneNode.getKind().getData().add(Pair.of(vertex, weight));
                 boneWeightMapBuilder.put(vertex, Pair.of(weight, boneNode));
+                boneListBuilder.add(boneNode);
             }
+            mesh.setBones(boneListBuilder.build());
             mesh.setWeightMap(boneWeightMapBuilder.build());
+
         }
     }
 
     private Node<?> createNode(OpenGEXNode openGEXNode) {
         final Node<?> node;
 
+        if (openGEXNode instanceof OgexCameraNode) {
+            return null;
+        }
+        if (openGEXNode instanceof OgexLightNode) {
+            return null;
+        }
+
         final List<Node<?>> childNodes = Lists.newArrayList();
-        for (final OgexNode childNode : openGEXNode) {
-            childNodes.add(createNode(childNode));
+        for (final OgexNode childOgexNode : openGEXNode) {
+            Node<?> childNode = createNode(childOgexNode);
+            if (childNode != null) {
+                childNodes.add(childNode);
+            }
         }
         TRSRTransformation trsr = TRSRTransformation.identity();
         String name = "";
@@ -211,13 +224,31 @@ public class Parser {
                     final Vector4f colour = new Vector4f();
 
                     //FIXME: don't assume arrays are populated, update for appropriate format.
-                    position.x = positionArray[0];
-                    position.y = positionArray[1];
-                    position.z = positionArray[2];
+                    if (up == Axis.Y) {
+                        position.x = positionArray[0];
+                        position.y = positionArray[1];
+                        position.z = positionArray[2];
 
-                    normal.x = normalArray[0];
-                    normal.y = normalArray[1];
-                    normal.z = normalArray[2];
+                        normal.x = normalArray[0];
+                        normal.y = normalArray[1];
+                        normal.z = normalArray[2];
+                    } else if (up == Axis.Z) {
+                        position.x = positionArray[1];
+                        position.y = positionArray[2];
+                        position.z = positionArray[0];
+
+                        normal.x = normalArray[1];
+                        normal.y = normalArray[2];
+                        normal.z = normalArray[0];
+                    }  else if (up == Axis.X) {
+                        position.x = positionArray[2];
+                        position.y = positionArray[0];
+                        position.z = positionArray[1];
+
+                        normal.x = normalArray[2];
+                        normal.y = normalArray[0];
+                        normal.z = normalArray[1];
+                    }
 
                     if (colorArray != null)
                     {

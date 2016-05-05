@@ -18,7 +18,7 @@ public class Mesh implements IKind<Mesh> {
     private final ImmutableList<Face> faces;
     //private final ImmutableList<Bone> bones;
 
-    private final Set<Node<Bone>> bones = new HashSet<Node<Bone>>();
+    private Set<Node<Bone>> bones = new HashSet<Node<Bone>>();
 
     private ImmutableMultimap<Vertex, Pair<Float, Node<Bone>>> weightMap = ImmutableMultimap.of();
 
@@ -52,6 +52,9 @@ public class Mesh implements IKind<Mesh> {
 
     public ImmutableSet<Node<Bone>> getBones() {
         return ImmutableSet.copyOf(bones);
+    }
+    public void setBones(Set<Node<Bone>> bones) {
+        this.bones = bones;
     }
 
     @Override

@@ -40,14 +40,15 @@ import net.minecraftforge.fml.common.registry.EntityRegistry;
 
 import com.google.common.collect.ImmutableMap;
 
+import static com.example.examplemod.ExampleMod.MODID;
+import static com.example.examplemod.Resources.B3DBlocks.blockChestName;
+
 @Mod(modid = ExampleMod.MODID, version = ExampleMod.VERSION)
 public class ExampleMod
 {
     public static final String MODID = "examplemod";
     public static final String VERSION = "0.0";
 
-    public static String blockName = "test_animation_block";
-    public static ResourceLocation blockId = new ResourceLocation(MODID, blockName);
     public static final PropertyDirection FACING = PropertyDirection.create("facing");
 
     @Instance(MODID)
@@ -58,6 +59,4 @@ public class ExampleMod
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) { proxy.preInit(event); }
-
 }
-

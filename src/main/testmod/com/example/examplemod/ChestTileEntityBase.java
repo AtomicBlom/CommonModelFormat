@@ -15,23 +15,17 @@ import net.minecraftforge.common.model.animation.IAnimationStateMachine;
 import static com.example.examplemod.ExampleMod.MODID;
 import static com.example.examplemod.ExampleMod.proxy;
 
-public class ChestTileEntity extends TileEntity
+public abstract class ChestTileEntityBase extends TileEntity
 {
     private final IAnimationStateMachine asm;
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
     private final TimeValues.VariableValue clickTime = new TimeValues.VariableValue(Float.NEGATIVE_INFINITY);
-    //private final VariableValue offset = new VariableValue(0);
 
-    public ChestTileEntity()
+    public ChestTileEntityBase()
     {
         asm = proxy.load(new ResourceLocation(MODID.toLowerCase(), "asms/block/chest.json"), ImmutableMap.<String, ITimeValue>of(
             "click_time", clickTime
         ));
-        /*asm = ExampleMod.proxy.load(new ResourceLocation(ExampleMod.MODID.toLowerCase(), "asms/block/engine.json"), ImmutableMap.<String, ITimeValue>of(
-                "cycle_length", cycleLength,
-                "click_time", clickTime
-                //"offset", offset
-        ));*/
     }
 
     public void handleEvents(float time, Iterable<Event> pastEvents)
@@ -66,18 +60,6 @@ public class ChestTileEntity extends TileEntity
                 clickTime.setValue(Animation.getWorldTime(getWorld()));
                 asm.transition("closing");
             }
-            /*else if (asm.currentState().equals("default"))
-            {
-                float time = Animation.getWorldTime(getWorld(), Animation.getPartialTickTime());
-                clickTime.setValue(time);
-                //offset.setValue(time);
-                //asm.transition("moving");
-                asm.transition("starting");
-            } else if (asm.currentState().equals("moving"))
-            {
-                clickTime.setValue(Animation.getWorldTime(getWorld(), Animation.getPartialTickTime()));
-                asm.transition("stopping");
-            }*/
         }
     }
 

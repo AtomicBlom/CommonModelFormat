@@ -43,7 +43,8 @@ public class Parser {
         processMeshBoneMapQueue();
 
         //Meshes is not currently used.
-        return new GenericModel(textures, brushes.values(), rootNode, null);
+        GenericModel model = new GenericModel(textures, brushes.values(), rootNode, null);
+        return model;
     }
 
     private void processMeshBoneMapQueue()

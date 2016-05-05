@@ -5,7 +5,6 @@ import net.minecraft.block.BlockPistonBase;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -19,15 +18,9 @@ import net.minecraftforge.common.property.ExtendedBlockState;
 import net.minecraftforge.common.property.IUnlistedProperty;
 import net.minecraftforge.common.property.Properties;
 
-class ChestBlock extends Block
+public abstract class ChestBlockBase extends Block
 {
-    {
-        setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
-        setUnlocalizedName(ExampleMod.MODID + "." + ExampleMod.blockName);
-        setRegistryName(ExampleMod.blockId);
-    }
-
-    public ChestBlock() {super(Material.WOOD);}
+    public ChestBlockBase() {super(Material.WOOD);}
 
     @Override
     public ExtendedBlockState createBlockState()
@@ -66,12 +59,6 @@ class ChestBlock extends Block
     }
 
     @Override
-    public TileEntity createTileEntity(World world, IBlockState state)
-    {
-        return new ChestTileEntity();
-    }
-
-    @Override
     public IBlockState getActualState(IBlockState state, IBlockAccess world, BlockPos pos)
     {
         return state.withProperty(Properties.StaticProperty, true);
@@ -83,9 +70,9 @@ class ChestBlock extends Block
         if (world.isRemote)
         {
             TileEntity te = world.getTileEntity(pos);
-            if (te instanceof ChestTileEntity)
+            if (te instanceof ChestTileEntityBase)
             {
-                ((ChestTileEntity) te).click(player.isSneaking());
+                ((ChestTileEntityBase) te).click(player.isSneaking());
             }
         }
         return true;

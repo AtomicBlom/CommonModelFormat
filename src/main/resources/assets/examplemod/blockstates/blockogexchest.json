@@ -2,7 +2,7 @@
   "forge_marker": 1,
   "defaults": {
     "textures": {
-      "#chest": "entity/chest/normal",
+      "chest": "entity/chest/normal",
       "base": "blocks/stone",
       "front": "blocks/log_oak",
       "chamber": "blocks/redstone_block",

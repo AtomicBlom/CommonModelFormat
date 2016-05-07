@@ -9,7 +9,7 @@
       "trunk": "blocks/end_stone",
       "//C/Users/Rosethorns/Documents/3dsMax/scenes/Minecraft/stone": "blocks/stone"
     },
-        "model": "examplemod:snek.ogex",
+        "model": "examplemod:snek3.ogex",
         "custom": {
             "mesh": ["Base", "Lid"]
         }

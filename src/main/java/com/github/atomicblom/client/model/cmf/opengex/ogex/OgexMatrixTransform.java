@@ -67,7 +67,9 @@ public class OgexMatrixTransform implements OgexTransform {
     }
  
     public float[] toMatrix() {
-        return matrix.clone();
+        final float[] clone = matrix.clone();
+        OgexMatrixTransform.transpose(clone);
+        return clone;
     }
 
     /**

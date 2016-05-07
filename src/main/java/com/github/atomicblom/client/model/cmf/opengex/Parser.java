@@ -51,16 +51,16 @@ public class Parser {
     private Matrix4f getMatrixForUpAxis(Axis up)
     {
         Matrix4f upMatrix = new Matrix4f();
-        if (up == Axis.Y) {
+        //if (up == Axis.Y) {
             upMatrix.setIdentity();
-        } else if (up == Axis.Z) {
+/*        } else if (up == Axis.Z) {
             upMatrix.m01 = 1;
             upMatrix.m12 = 1;
             upMatrix.m20 = 1;
             upMatrix.m33 = 1;
         } else {
             throw new OpenGEXException("Need a matrix for up = X");
-        }
+        }*/
         return upMatrix;
     }
 
@@ -334,7 +334,6 @@ public class Parser {
         final Matrix4f transform = new Matrix4f();
         for (final OgexTransform ogexTransform : transforms) {
             transform.set(ogexTransform.toMatrix());
-            transform.transpose();
             transform.mul(upMatrix);
             transformation.mul(transform);
         }

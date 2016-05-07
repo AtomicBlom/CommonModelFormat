@@ -52,19 +52,24 @@ public class Parser {
         {
             final Mesh mesh = meshImmutableMultimapPair.getLeft();
             final ImmutableMultimap.Builder<Vertex, Pair<Float, Node<Bone>>> boneWeightMapBuilder = ImmutableMultimap.builder();
-            final ImmutableSet.Builder<Node<Bone>> boneListBuilder = ImmutableSet.builder();
-            for (final Map.Entry<Vertex, Pair<Float, OgexBoneNode>> vertexPairEntry : meshImmutableMultimapPair.getRight().entries())
+            final Set bonesUsed = Sets.newHashSet();
+            for (final Vertex vertex : meshImmutableMultimapPair.getRight().keySet())
             {
-                final Vertex vertex = vertexPairEntry.getKey();
-                final Float weight = vertexPairEntry.getValue().getLeft();
-                final OgexBoneNode ogexBoneNode = vertexPairEntry.getValue().getRight();
+                final ImmutableCollection<Pair<Float, OgexBoneNode>> pairs = meshImmutableMultimapPair.getRight().get(vertex);
+                for (final Pair<Float, OgexBoneNode> pair : pairs)
+                {
+                    final Float weight = pair.getLeft();
+                    final OgexBoneNode ogexBoneNode = pair.getRight();
 
-                final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode);
-                boneNode.getKind().getData().add(Pair.of(vertex, weight));
-                boneWeightMapBuilder.put(vertex, Pair.of(weight, boneNode));
-                boneListBuilder.add(boneNode);
+                    final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode);
+                    boneNode.getKind().getData().add(Pair.of(vertex, weight));
+                    boneWeightMapBuilder.put(vertex, Pair.of(weight, boneNode));
+                    if (!bonesUsed.contains(boneNode)) {
+                        bonesUsed.add(boneNode);
+                    }
+                }
             }
-            mesh.setBones(boneListBuilder.build());
+            mesh.setBones(bonesUsed);
             mesh.setWeightMap(boneWeightMapBuilder.build());
 
         }
@@ -175,9 +180,11 @@ public class Parser {
 
         final List<OgexVertexArray> vertexArrays = mesh.getVertexArrays();
 
+        final Set<Integer> mappedVertices = Sets.newHashSet();
+
         for (final OgexIndexArray indexArray : mesh.getIndexArrays())
         {
-            ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = ImmutableMultimap.builder();
+            final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = ImmutableMultimap.builder();
             final List<Face> faces = Lists.newArrayList();
 
             int material = (int) indexArray.getMaterial();
@@ -277,7 +284,7 @@ public class Parser {
 
                     final Vertex vertex = new Vertex(position, normal, colour, uvs);
 
-                    if (skin != null) {
+                    if (skin != null && !mappedVertices.contains(vertexIndex)) {
                         final int boneCount = skin.getBoneCount().asIntArray()[vertexIndex];
                         final int aBone = boneIndexTransform[vertexIndex];
                         for (int boneId = 0; boneId < boneCount; ++boneId) {
@@ -287,6 +294,7 @@ public class Parser {
 
                             boneWeightMapBuilder.put(vertex, Pair.of(boneWeight, ogexNode));
                         }
+                        mappedVertices.add(vertexIndex);
                     }
 
                     vertices[i] = vertex;
@@ -396,7 +404,8 @@ public class Parser {
             } else if (ogexTransform instanceof OgexMatrixTransform) {
                 final OgexMatrixTransform ogexMatrix = (OgexMatrixTransform) ogexTransform;
                 final Matrix4f matrix = new Matrix4f(ogexMatrix.getMatrix());
-                transformation = transformation.compose(new TRSRTransformation(matrix));
+                //matrix.transpose();
+                transformation = new TRSRTransformation(matrix).compose(transformation);
             }
         }
         return transformation;

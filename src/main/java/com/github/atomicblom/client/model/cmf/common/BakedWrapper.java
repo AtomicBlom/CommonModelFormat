@@ -59,7 +59,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
                     public GenericState load(Integer frame) throws Exception
                     {
                         IModelState parent = state;
-                        Animation newAnimation = node.getAnimation();
+                        IAnimation newAnimation = node.getAnimation();
                         if (parent instanceof GenericState)
                         {
                             GenericState ps = (GenericState) parent;
@@ -97,7 +97,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
                 {
                     //return getCachedModel(s.getFrame());
                     IModelState parent = this.state;
-                    Animation newAnimation = s.getAnimation();
+                    IAnimation newAnimation = s.getAnimation();
                     if (parent instanceof GenericState)
                     {
                         GenericState ps = (GenericState) parent;
@@ -153,8 +153,9 @@ public class BakedWrapper implements IPerspectiveAwareModel
         {
             generateQuads(builder, child, state);
         }
-        //if (node.getKind() instanceof Mesh && meshes.contains(node.getName()))
-        if (node.getKind() instanceof Mesh)
+        if (node.getKind() instanceof Mesh && meshes.contains(node.getName()))
+        // show all meshes, helpful for debugging
+        //if (node.getKind() instanceof Mesh)
         {
             Mesh mesh = (Mesh) node.getKind();
             Collection<Face> faces = mesh.bake(new Function<Node<?>, Matrix4f>()

@@ -11,28 +11,28 @@ import net.minecraftforge.common.model.TRSRTransformation;
  */
 public final class GenericState implements IModelState
 {
-    private final Animation animation;
+    private final IAnimation animation;
     private final int frame;
     private final int nextFrame;
     private final float progress;
     private final IModelState parent;
 
-    public GenericState(Animation animation, int frame)
+    public GenericState(IAnimation animation, int frame)
     {
         this(animation, frame, frame, 0);
     }
 
-    public GenericState(Animation animation, int frame, IModelState parent)
+    public GenericState(IAnimation animation, int frame, IModelState parent)
     {
         this(animation, frame, frame, 0, parent);
     }
 
-    public GenericState(Animation animation, int frame, int nextFrame, float progress)
+    public GenericState(IAnimation animation, int frame, int nextFrame, float progress)
     {
         this(animation, frame, nextFrame, progress, null);
     }
 
-    public GenericState(Animation animation, int frame, int nextFrame, float progress, IModelState parent)
+    public GenericState(IAnimation animation, int frame, int nextFrame, float progress, IModelState parent)
     {
         this.animation = animation;
         this.frame = frame;
@@ -48,7 +48,7 @@ public final class GenericState implements IModelState
         return parent;
     }
 
-    public Animation getAnimation()
+    public IAnimation getAnimation()
     {
         return animation;
     }
@@ -103,13 +103,13 @@ public final class GenericState implements IModelState
     }
 
     //FIXME: Reenable
-    /*private static final LoadingCache<Triple<Animation, Node<?>, Integer>, TRSRTransformation> cache = CacheBuilder.newBuilder()
+    /*private static final LoadingCache<Triple<IAnimation, Node<?>, Integer>, TRSRTransformation> cache = CacheBuilder.newBuilder()
             .maximumSize(16384)
             .expireAfterAccess(2, TimeUnit.MINUTES)
-            .build(new CacheLoader<Triple<Animation, Node<?>, Integer>, TRSRTransformation>()
+            .build(new CacheLoader<Triple<IAnimation, Node<?>, Integer>, TRSRTransformation>()
             {
                 @Override
-                public TRSRTransformation load(Triple<Animation, Node<?>, Integer> key) throws Exception
+                public TRSRTransformation load(Triple<IAnimation, Node<?>, Integer> key) throws Exception
                 {
                     return getNodeMatrix(key.getLeft(), key.getMiddle(), key.getRight());
                 }
@@ -126,57 +126,43 @@ public final class GenericState implements IModelState
         return getNodeMatrix(animation, node, frame);
     }
 
-    public static TRSRTransformation getNodeMatrix(Animation animation, Node<?> node, int frame)
+    public static TRSRTransformation getNodeMatrix(IAnimation animation, Node<?> node, int frame)
     {
         TRSRTransformation ret = TRSRTransformation.identity();
-        Key key = null;
-        if (animation != null) key = animation.getKeys().get(frame, node);
-        else if (node.getAnimation() != null && node.getAnimation() != animation)
-            key = node.getAnimation().getKeys().get(frame, node);
-        if (key != null)
+        TRSRTransformation local;
+        if (animation != null) {
+            local = animation.apply(frame, node);
+        } else if (node.getAnimation() != null && node.getAnimation() != animation) {
+            local = node.getAnimation().apply(frame, node);
+        } else {
+            local = node.getTransformation();
+        }
+        Node<?> parent = node.getParent();
+        if (parent != null)
         {
-            Node<?> parent = node.getParent();
-            if (parent != null)
-            {
-                // parent cmf-global current pose
-                TRSRTransformation pm = getNodeMatrix(animation, node.getParent(), frame);//cache.getUnchecked(Triple.of(animation, node.getParent(), frame));
-                ret = ret.compose(pm);
-                // joint offset in the parent coords
-                ret = ret.compose(parent.getTransformation());
-            }
-            // current node local pose
-            ret = ret.compose(new TRSRTransformation(key.getPos(), key.getRot(), key.getScale(), null));
-            // this part moved inside the cmf
-            // inverse bind of the curent node
-            /*Matrix4f rm = new TRSRTransformation(node.getPos(), node.getRot(), node.getScale(), null).getMatrix();
+            // parent cmf-global current pose
+            TRSRTransformation pm = getNodeMatrix(animation, node.getParent(), frame);//cache.getUnchecked(Triple.of(animation, node.getParent(), frame));
+            ret = ret.compose(pm);
+            // joint offset in the parent coords
+            ret = ret.compose(parent.getTransformation());
+        }
+        // current node local pose
+        ret = ret.compose(local);
+        // this part moved inside the cmf
+        // inverse bind of the curent node
+        /*Matrix4f rm = new TRSRTransformation(node.getPos(), node.getRot(), node.getScale(), null).getMatrix();
+        rm.invert();
+        ret = ret.compose(new TRSRTransformation(rm));
+        if(parent != null)
+        {
+            // inverse bind of the parent
+            rm = new TRSRTransformation(parent.getPos(), parent.getRot(), parent.getScale(), null).getMatrix();
             rm.invert();
             ret = ret.compose(new TRSRTransformation(rm));
-            if(parent != null)
-            {
-                // inverse bind of the parent
-                rm = new TRSRTransformation(parent.getPos(), parent.getRot(), parent.getScale(), null).getMatrix();
-                rm.invert();
-                ret = ret.compose(new TRSRTransformation(rm));
-            }*/
-            // TODO cache
-            TRSRTransformation invBind = new NodeJoint(node).getInvBindPose();
-            ret = ret.compose(invBind);
-        } else
-        {
-            Node<?> parent = node.getParent();
-            if (parent != null)
-            {
-                // parent cmf-global current pose
-                TRSRTransformation pm = getNodeMatrix(animation, node.getParent(), frame);//cache.getUnchecked(Triple.of(animation, node.getParent(), frame));
-                ret = ret.compose(pm);
-                // joint offset in the parent coords
-                ret = ret.compose(parent.getTransformation());
-            }
-            ret = ret.compose(node.getTransformation());
-            // TODO cache
-            TRSRTransformation invBind = new NodeJoint(node).getInvBindPose();
-            ret = ret.compose(invBind);
-        }
+        }*/
+        // TODO cache
+        TRSRTransformation invBind = new NodeJoint(node).getInvBindPose();
+        ret = ret.compose(invBind);
         return ret;
     }
 }

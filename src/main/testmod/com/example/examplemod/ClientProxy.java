@@ -33,7 +33,7 @@ public class ClientProxy extends CommonProxy
         ModelLoader.setCustomModelResourceLocation(
                 Item.REGISTRY.getObject(Resources.OgexBlocks.blockChestId), 0,
                 new ModelResourceLocation(Resources.OgexBlocks.blockChestId, "inventory"));
-        /*ClientRegistry.bindTileEntitySpecialRenderer(B3DChestTileEntity.class, new AnimationTESR<B3DChestTileEntity>()
+        ClientRegistry.bindTileEntitySpecialRenderer(B3DChestTileEntity.class, new AnimationTESR<B3DChestTileEntity>()
         {
             @Override
             public void handleEvents(B3DChestTileEntity chest, float time, Iterable<Event> pastEvents) {
@@ -47,7 +47,7 @@ public class ClientProxy extends CommonProxy
             public void handleEvents(OgexChestTileEntity chest, float time, Iterable<Event> pastEvents) {
                 chest.handleEvents(time, pastEvents);
             }
-        });*/
+        });
     }
 
     public IAnimationStateMachine load(ResourceLocation location, ImmutableMap<String, ITimeValue> parameters)

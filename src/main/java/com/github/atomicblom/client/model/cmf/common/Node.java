@@ -1,5 +1,6 @@
 package com.github.atomicblom.client.model.cmf.common;
 
+import com.github.atomicblom.client.model.cmf.b3d.B3DAnimation;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -20,7 +21,7 @@ public class Node<K extends IKind<K>> {
     private final String name;
     private final TRSRTransformation transformation;
     private final ImmutableMap<String, Node<?>> nodes;
-    private Animation animation;
+    private IAnimation animation;
     private final K kind;
     private Node<? extends IKind<?>> parent;
 
@@ -39,7 +40,7 @@ public class Node<K extends IKind<K>> {
         }
     }
 
-    public void setAnimation(Animation animation) {
+    public void setAnimation(IAnimation animation) {
         this.animation = animation;
         Deque<Node<?>> q = new ArrayDeque<Node<?>>(nodes.values());
 
@@ -56,7 +57,7 @@ public class Node<K extends IKind<K>> {
         for (Cell<Integer, Optional<Node<?>>, Key> key : keyData.cellSet()) {
             builder.put(key.getRowKey(), key.getColumnKey().or(this), key.getValue());
         }
-        setAnimation(new Animation(animData.getLeft(), animData.getMiddle(), animData.getRight(), builder.build()));
+        setAnimation(new B3DAnimation(animData.getLeft(), animData.getMiddle(), animData.getRight(), builder.build()));
     }
 
     private ImmutableMap<String, Node<?>> buildNodeMap(List<Node<?>> nodes) {
@@ -79,7 +80,7 @@ public class Node<K extends IKind<K>> {
         return nodes;
     }
 
-    public Animation getAnimation() {
+    public IAnimation getAnimation() {
         return animation;
     }
 

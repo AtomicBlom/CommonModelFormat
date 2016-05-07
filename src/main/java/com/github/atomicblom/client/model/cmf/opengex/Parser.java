@@ -4,6 +4,7 @@ import com.google.common.collect.*;
 import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
 import net.minecraftforge.common.model.TRSRTransformation;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,6 +22,7 @@ public class Parser {
     private final InputStream inputStream;
     private Axis up;
     private Matrix4f upMatrix;
+    private Matrix4f upInvMatrix;
 
     public Parser(InputStream inputStream)
     {
@@ -38,6 +40,8 @@ public class Parser {
         final OgexScene ogexScene = ogexParser.parseScene(reader);
         up = ogexScene.getMetrics().getUp();
         upMatrix = getMatrixForUpAxis(up);
+        upInvMatrix = new Matrix4f(upMatrix);
+        upInvMatrix.invert();
         getBrushes(ogexScene);
         final Node<?> rootNode = createNode(ogexScene);
 
@@ -51,16 +55,19 @@ public class Parser {
     private Matrix4f getMatrixForUpAxis(Axis up)
     {
         Matrix4f upMatrix = new Matrix4f();
-        //if (up == Axis.Y) {
+        if (up == Axis.Y) {
             upMatrix.setIdentity();
-/*        } else if (up == Axis.Z) {
+        } else if (up == Axis.Z) {
             upMatrix.m01 = 1;
             upMatrix.m12 = 1;
             upMatrix.m20 = 1;
             upMatrix.m33 = 1;
         } else {
-            throw new OpenGEXException("Need a matrix for up = X");
-        }*/
+            upMatrix.m02 = 1;
+            upMatrix.m10 = 1;
+            upMatrix.m21 = 1;
+            upMatrix.m33 = 1;
+        }
         return upMatrix;
     }
 
@@ -93,6 +100,73 @@ public class Parser {
         }
     }
 
+    private TRSRTransformation applyTrack(OgexTrack track, float time)
+    {
+        if(track.getTime().getCurve() != Curve.Linear || track.getValue().getCurve() != Curve.Linear)
+        {
+            //throw new NotImplementedException("Only linear for now");
+        }
+        float[] times = (float[])track.getTime().getKeys()[0].getData();
+        if(time == 0)
+        {
+            return getTrackData(track, 0);
+        }
+        int i0 = 0, i1 = times.length - 1;
+        // can't be bothered to write a binsearch, FIXME later
+        // TODO metric
+        while(i0 + 1 < times.length && times[i0 + 1] <= time) i0++;
+        while(i1 - 1 >= 0 && times[i1 - 1] > time) i1--;
+        float t0 = times[i0];
+        float t1 = times[i1];
+        float s;
+        if(Math.abs(t0 - t1) < 1e-5) s = t0;
+        else s = (time - t0) / (t1 - t0);
+        TRSRTransformation v0 = getTrackData(track, i0);
+        TRSRTransformation v1 = getTrackData(track, i1);
+        return v0.slerp(v1, s);
+    }
+
+    private TRSRTransformation getTrackData(OgexTrack track, int keyIndex)
+    {
+        Object v = track.getValue().getKeys()[0].getData();
+        Object target = track.getTarget();
+        Matrix4f transform = new Matrix4f();
+        if(target instanceof OgexMatrixTransform)
+        {
+            OgexMatrixTransform mt = (OgexMatrixTransform) target;
+            transform.set(((float[][])v)[keyIndex]);
+            transform.transpose();
+        }
+        else if (target instanceof OgexRotation.ComponentRotation)
+        {
+            OgexRotation.ComponentRotation rot = (OgexRotation.ComponentRotation) target;
+            float angle = ((float[])v)[keyIndex];
+            AxisAngle4f aa = new AxisAngle4f(0, 0, 0, angle);
+            switch(rot.getKind())
+            {
+                case X:
+                    aa.x = 1;
+                    break;
+                case Y:
+                    aa.y = 1;
+                    break;
+                case Z:
+                    aa.z = 1;
+                    break;
+                default:
+                    throw new IllegalStateException("ComponentRotation has kind" + rot.getKind());
+            }
+            transform.set(aa);
+        }
+        else
+        {
+            throw new NotImplementedException("Only Matrix Transform for now");
+        }
+        transform.mul(upMatrix, transform);
+        transform.mul(upInvMatrix);
+        return new TRSRTransformation(transform);
+    }
+
     private Node<?> createNode(OpenGEXNode openGEXNode) {
         final Node<?> node;
 
@@ -112,11 +186,29 @@ public class Parser {
         }
         TRSRTransformation trsr = TRSRTransformation.identity();
         String name = "";
+        IAnimation animation = null;
 
         if (openGEXNode instanceof OgexNode) {
             final OgexNode ogexNode = (OgexNode) openGEXNode;
             trsr = getTRSRTransformationFromTransforms(ogexNode.getTransforms());
             name = ogexNode.getName();
+            // FIXME more than 1 clip
+            if(!ogexNode.getAnimations().isEmpty()) {
+                final OgexAnimation ogexAnimation = ogexNode.getAnimations().iterator().next();
+                animation = new IAnimation()
+                {
+                    @Override
+                    public TRSRTransformation apply(float time, Node<?> node)
+                    {
+                        TRSRTransformation ret = TRSRTransformation.identity();
+                        for(OgexTrack track : ogexAnimation)
+                        {
+                            ret = ret.compose(applyTrack(track, time));
+                        }
+                        return ret;
+                    }
+                };
+            }
         }
 
         if (openGEXNode instanceof OgexGeometryNode) {
@@ -157,6 +249,10 @@ public class Parser {
             }
         }
 
+        if(animation != null)
+        {
+            node.setAnimation(animation);
+        }
         return node;
     }
 
@@ -288,7 +384,7 @@ public class Parser {
 
                     final Vertex vertex = new Vertex(position, normal, colour, uvs);
 
-                    if (skin != null && !mappedVertices.contains(vertexIndex)) {
+                    if (skin != null /*&& !mappedVertices.contains(vertexIndex)*/) {
                         final int boneCount = skin.getBoneCount().asIntArray()[vertexIndex];
                         final int aBone = boneIndexTransform[vertexIndex];
                         for (int boneId = 0; boneId < boneCount; ++boneId) {
@@ -334,7 +430,8 @@ public class Parser {
         final Matrix4f transform = new Matrix4f();
         for (final OgexTransform ogexTransform : transforms) {
             transform.set(ogexTransform.toMatrix());
-            transform.mul(upMatrix);
+            transform.mul(upMatrix, transform);
+            transform.mul(upInvMatrix);
             transformation.mul(transform);
         }
         return new TRSRTransformation(transformation);

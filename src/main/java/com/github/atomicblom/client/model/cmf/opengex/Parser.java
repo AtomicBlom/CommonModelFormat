@@ -20,6 +20,7 @@ public class Parser {
 
     private final InputStream inputStream;
     private Axis up;
+    private Matrix4f upMatrix;
 
     public Parser(InputStream inputStream)
     {
@@ -36,6 +37,7 @@ public class Parser {
         final Reader reader = new InputStreamReader(inputStream);
         final OgexScene ogexScene = ogexParser.parseScene(reader);
         up = ogexScene.getMetrics().getUp();
+        upMatrix = getMatrixForUpAxis(up);
         getBrushes(ogexScene);
         final Node<?> rootNode = createNode(ogexScene);
 
@@ -44,6 +46,22 @@ public class Parser {
         //Meshes is not currently used.
         GenericModel model = new GenericModel(textures, brushes.values(), rootNode, null);
         return model;
+    }
+
+    private Matrix4f getMatrixForUpAxis(Axis up)
+    {
+        Matrix4f upMatrix = new Matrix4f();
+        if (up == Axis.Y) {
+            upMatrix.setIdentity();
+        } else if (up == Axis.Z) {
+            upMatrix.m01 = 1;
+            upMatrix.m12 = 1;
+            upMatrix.m20 = 1;
+            upMatrix.m33 = 1;
+        } else {
+            throw new OpenGEXException("Need a matrix for up = X");
+        }
+        return upMatrix;
     }
 
     private void processMeshBoneMapQueue()
@@ -230,32 +248,18 @@ public class Parser {
 
                     final Vector4f colour = new Vector4f();
 
+                    position.x = positionArray[0];
+                    position.y = positionArray[1];
+                    position.z = positionArray[2];
+
+                    normal.x = normalArray[0];
+                    normal.y = normalArray[1];
+                    normal.z = normalArray[2];
+
+                    upMatrix.transform(position);
+                    upMatrix.transform(normal);
+
                     //FIXME: don't assume arrays are populated, update for appropriate format.
-                    if (up == Axis.Y) {
-                        position.x = positionArray[0];
-                        position.y = positionArray[1];
-                        position.z = positionArray[2];
-
-                        normal.x = normalArray[0];
-                        normal.y = normalArray[1];
-                        normal.z = normalArray[2];
-                    } else if (up == Axis.Z) {
-                        position.x = positionArray[1];
-                        position.y = positionArray[2];
-                        position.z = positionArray[0];
-
-                        normal.x = normalArray[1];
-                        normal.y = normalArray[2];
-                        normal.z = normalArray[0];
-                    }  else if (up == Axis.X) {
-                        position.x = positionArray[2];
-                        position.y = positionArray[0];
-                        position.z = positionArray[1];
-
-                        normal.x = normalArray[2];
-                        normal.y = normalArray[0];
-                        normal.z = normalArray[1];
-                    }
 
                     if (colorArray != null)
                     {
@@ -318,97 +322,23 @@ public class Parser {
             meshBoneMapQueue.add(Pair.of(mesh1, boneWeightMapBuilder.build()));
 
             meshes.add(mesh1);
-            //return mesh1;
         }
 
         return meshes;
     }
 
     private TRSRTransformation getTRSRTransformationFromTransforms(List<OgexTransform> transforms) {
-        TRSRTransformation transformation = TRSRTransformation.identity();
+        final Matrix4f transformation = new Matrix4f();
+        transformation.setIdentity();
+
+        final Matrix4f transform = new Matrix4f();
         for (final OgexTransform ogexTransform : transforms) {
-            if (ogexTransform instanceof OgexScale.ComponentScale) {
-                final OgexScale.ComponentScale ogexScale = (OgexScale.ComponentScale) ogexTransform;
-                final Vector3f scale;
-                final float scaleValues = ogexScale.getScale();
-                if (ogexScale.getKind().getOgexName().equals("X"))
-                {
-                    scale = new Vector3f(scaleValues, 1, 1);
-
-                } else if (ogexScale.getKind().getOgexName().equals("Y"))
-                {
-                    scale = new Vector3f(1, scaleValues, 1);
-
-                } else
-                {
-                    scale = new Vector3f(1, 1, scaleValues);
-                }
-                transformation = transformation.compose(new TRSRTransformation(null, null, scale, null));
-
-            } else if (ogexTransform instanceof OgexScale.XyzScale) {
-                final OgexScale.XyzScale ogexScale = (OgexScale.XyzScale) ogexTransform;
-                final float[] scaleValues = ogexScale.getScale();
-                final Vector3f scale = new Vector3f(scaleValues[0], scaleValues[1], scaleValues[2]);
-                transformation = transformation.compose(new TRSRTransformation(null, null, scale, null));
-
-            } else if (ogexTransform instanceof OgexRotation.AxisRotation) {
-                final OgexRotation.AxisRotation ogexRotation = (OgexRotation.AxisRotation) ogexTransform;
-
-                throw new UnsupportedOperationException("OGEX: Attempt to use Axis rotation which is not supported yet.");
-            } else if (ogexTransform instanceof OgexRotation.ComponentRotation) {
-                final OgexRotation.ComponentRotation ogexRotation = (OgexRotation.ComponentRotation) ogexTransform;
-
-                //FIXME: I have *NO* idea which axis this comes in as.
-                final Quat4f rotation = new Quat4f();
-                if (ogexRotation.getKind().getOgexName().equals("X"))
-                {
-                    rotation.set(new AxisAngle4f(1, 0, 0, ogexRotation.getAngle()));
-
-                } else if (ogexRotation.getKind().getOgexName().equals("Y"))
-                {
-                    rotation.set(new AxisAngle4f(0, 1, 0, ogexRotation.getAngle()));
-
-                } else
-                {
-                    rotation.set(new AxisAngle4f(0, 0, 1, ogexRotation.getAngle()));
-                }
-                transformation = transformation.compose(new TRSRTransformation(null, rotation, null, null));
-            } else if (ogexTransform instanceof OgexRotation.QuaternionRotation) {
-                final OgexRotation.QuaternionRotation ogexRotation = (OgexRotation.QuaternionRotation) ogexTransform;
-
-                //FIXME: I have *NO* idea which axis this comes in as.
-                final Quat4f rotation = new Quat4f(ogexRotation.getQuat()[0], ogexRotation.getQuat()[1], ogexRotation.getQuat()[2], ogexRotation.getQuat()[3]);
-                transformation = transformation.compose(new TRSRTransformation(null, rotation, null, null));
-            } else if (ogexTransform instanceof OgexTranslation.ComponentTranslation) {
-                final OgexTranslation.ComponentTranslation ogexTranslation = (OgexTranslation.ComponentTranslation) ogexTransform;
-                final Vector3f position = new Vector3f();
-
-                if (ogexTranslation.getKind().getOgexName().equals("X"))
-                {
-                    position.x = ogexTranslation.getTranslation();
-
-                } else if (ogexTranslation.getKind().getOgexName().equals("Y"))
-                {
-                    position.y = ogexTranslation.getTranslation();
-
-                } else if (ogexTranslation.getKind().getOgexName().equals("Z"))
-                {
-                    position.z = ogexTranslation.getTranslation();
-                }
-                transformation = transformation.compose(new TRSRTransformation(position, null, null, null));
-            } else if (ogexTransform instanceof OgexTranslation.XyzTranslation) {
-                final OgexTranslation.XyzTranslation ogexTranslation = (OgexTranslation.XyzTranslation) ogexTransform;
-                final float[] translation = ogexTranslation.getTranslation();
-                final Vector3f position = new Vector3f(translation[0], translation[1], translation[2]);
-                transformation = transformation.compose(new TRSRTransformation(position, null, null, null));
-            } else if (ogexTransform instanceof OgexMatrixTransform) {
-                final OgexMatrixTransform ogexMatrix = (OgexMatrixTransform) ogexTransform;
-                final Matrix4f matrix = new Matrix4f(ogexMatrix.getMatrix());
-                //matrix.transpose();
-                transformation = new TRSRTransformation(matrix).compose(transformation);
-            }
+            transform.set(ogexTransform.toMatrix());
+            transform.transpose();
+            transform.mul(upMatrix);
+            transformation.mul(transform);
         }
-        return transformation;
+        return new TRSRTransformation(transformation);
     }
 
     private void getBrushes(OgexScene ogexScene) {
@@ -431,7 +361,6 @@ public class Parser {
             texture = getSingleTextureFromList(texture, textures);
 
             brushTextures.add(texture);
-
 
             brushes.put(ogexMaterial, new Brush(name, color, shininess, blend, fx, brushTextures));
         }

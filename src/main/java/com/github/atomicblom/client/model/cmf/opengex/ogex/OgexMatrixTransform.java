@@ -59,7 +59,7 @@ public class OgexMatrixTransform implements OgexTransform {
     }
     
     public void setMatrix( float[] matrix ) {
-        this.matrix = transpose(matrix);
+        this.matrix = matrix;
     }
     
     public float[] getMatrix() {
@@ -69,7 +69,7 @@ public class OgexMatrixTransform implements OgexTransform {
     public float[] toMatrix() {
         return matrix.clone();
     }
- 
+
     /**
      *  Converts from row major to column major or reverse
      *  in place.  The passed array is returned again.

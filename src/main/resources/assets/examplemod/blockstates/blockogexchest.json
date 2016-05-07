@@ -6,9 +6,10 @@
       "base": "blocks/stone",
       "front": "blocks/log_oak",
       "chamber": "blocks/redstone_block",
-      "trunk": "blocks/end_stone"
+      "trunk": "blocks/end_stone",
+      "//C/Users/Rosethorns/Documents/3dsMax/scenes/Minecraft/stone": "blocks/stone"
     },
-        "model": "examplemod:chest.ogex",
+        "model": "examplemod:snek.ogex",
         "custom": {
             "mesh": ["Base", "Lid"]
         }

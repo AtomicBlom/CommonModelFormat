@@ -17,14 +17,14 @@ public class Mesh implements IKind<Mesh> {
 
     private Set<Node<Bone>> bones = new HashSet<Node<Bone>>();
 
-    private ImmutableMultimap<Vertex, Pair<Float, Node<Bone>>> weightMap = ImmutableMultimap.of();
+    private ImmutableMultimap<Vertex, BoneWeight> weightMap = ImmutableMultimap.of();
 
     public Mesh(Pair<Brush, List<Face>> data) {
         brush = data.getLeft();
         faces = ImmutableList.copyOf(data.getRight());
     }
 
-    public ImmutableMultimap<Vertex, Pair<Float, Node<Bone>>> getWeightMap() {
+    public ImmutableMultimap<Vertex, BoneWeight> getWeightMap() {
         return weightMap;
     }
 
@@ -59,7 +59,7 @@ public class Mesh implements IKind<Mesh> {
         return String.format("Mesh [pivot=%s, brush=%s, data=...]", super.toString(), brush);
     }
 
-    public void setWeightMap(ImmutableMultimap<Vertex, Pair<Float, Node<Bone>>> weightMap) {
+    public void setWeightMap(ImmutableMultimap<Vertex, BoneWeight> weightMap) {
         this.weightMap = weightMap;
     }
 

@@ -61,7 +61,7 @@ public class Face {
 
     @Override
     public String toString() {
-        return String.format("Face [v1=%s, v2=%s, v3=%s]", v1, v2, v3);
+        return String.format("Face [v1=%s, v2=%s, v3=%s, v4=%s]", v1, v2, v3, v4);
     }
 
     public Vector3f getNormal() {

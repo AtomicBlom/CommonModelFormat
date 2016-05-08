@@ -33,10 +33,10 @@ public class Vertex {
         if (mesh.getWeightMap().get(this).isEmpty()) {
             t.add(animator.apply(mesh.getParent()));
         } else {
-            for (Pair<Float, Node<Bone>> bone : mesh.getWeightMap().get(this)) {
-                totalWeight += bone.getLeft();
-                Matrix4f bm = animator.apply(bone.getRight());
-                bm.mul(bone.getLeft());
+            for (BoneWeight boneWeight : mesh.getWeightMap().get(this)) {
+                totalWeight += boneWeight.getWeight();
+                Matrix4f bm = animator.apply(boneWeight.getBoneNode());
+                bm.mul(boneWeight.getWeight());
 
                 t.add(bm);
             }

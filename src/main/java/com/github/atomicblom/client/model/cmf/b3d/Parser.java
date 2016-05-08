@@ -425,10 +425,10 @@ public class Parser
             final Mesh meshKind = new Mesh(mesh);
             Node<Mesh> mNode = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, meshKind);
 
-            ImmutableMultimap.Builder<Vertex, Pair<Float, Node<Bone>>> builder = ImmutableMultimap.builder();
+            ImmutableMultimap.Builder<Vertex, BoneWeight> builder = ImmutableMultimap.builder();
             for (Node<Bone> childBone : meshKind.getBones()) {
                 for (Pair<Vertex, Float> b : childBone.getKind().getData()) {
-                    builder.put(b.getLeft(), Pair.of(b.getRight(), childBone));
+                    builder.put(b.getLeft(), new BoneWeight(childBone, b.getRight()));
                 }
             }
 

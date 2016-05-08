@@ -3,6 +3,7 @@ package com.github.atomicblom.client.model.cmf.opengex;
 import com.github.atomicblom.client.model.cmf.common.IAnimation;
 import com.github.atomicblom.client.model.cmf.common.Node;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
+import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.lang3.NotImplementedException;
 import javax.vecmath.AxisAngle4f;
@@ -13,26 +14,49 @@ import javax.vecmath.Matrix4f;
  */
 class OpenGEXAnimation implements IAnimation
 {
-    private final OgexAnimation ogexAnimation;
+    private final ImmutableMap<OgexTransform, OgexTrack> tracks;
+    private final ImmutableMap<OgexTransform, TRSRTransformation> transforms;
     private final Matrix4f upAxis;
     private final Matrix4f upAxisInverted;
 
-    public OpenGEXAnimation(OgexAnimation ogexAnimation, Matrix4f upAxis)
+    public OpenGEXAnimation(Iterable<OgexTransform> transforms, OgexAnimation ogexAnimation, Matrix4f upAxis)
     {
-        this.ogexAnimation = ogexAnimation;
         this.upAxis = upAxis;
 
         this.upAxisInverted = new Matrix4f(upAxis);
         upAxisInverted.invert();
+        final ImmutableMap.Builder<OgexTransform, OgexTrack> trackMapBuilder = ImmutableMap.builder();
+        for(OgexTrack track : ogexAnimation)
+        {
+            trackMapBuilder.put((OgexTransform) track.getTarget(), track);
+        }
+        tracks = trackMapBuilder.build();
+        final ImmutableMap.Builder<OgexTransform, TRSRTransformation> mapBuilder = ImmutableMap.builder();
+        for (final OgexTransform ogexTransform : transforms)
+        {
+            final Matrix4f transform = new Matrix4f();
+            transform.set(ogexTransform.toMatrix());
+            transform.mul(upAxis, transform);
+            transform.mul(upAxisInverted);
+            mapBuilder.put(ogexTransform, new TRSRTransformation(transform));
+        }
+        this.transforms = mapBuilder.build();
     }
 
     @Override
     public TRSRTransformation apply(float time, Node<?> node)
     {
         TRSRTransformation ret = TRSRTransformation.identity();
-        for (OgexTrack track : ogexAnimation)
+        for(OgexTransform transform : transforms.keySet())
         {
-            ret = ret.compose(applyTrack(track, time));
+            if(tracks.containsKey(transform))
+            {
+                ret = ret.compose(applyTrack(tracks.get(transform), time));
+            }
+            else
+            {
+                ret = ret.compose(transforms.get(transform));
+            }
         }
         return ret;
     }

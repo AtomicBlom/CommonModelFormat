@@ -128,7 +128,7 @@ public class Parser {
             // FIXME more than 1 clip
             if(!ogexNode.getAnimations().isEmpty()) {
                 final OgexAnimation ogexAnimation = ogexNode.getAnimations().iterator().next();
-                animation = new OpenGEXAnimation(ogexAnimation, upMatrix);
+                animation = new OpenGEXAnimation(ogexNode.getTransforms(), ogexAnimation, upMatrix);
             }
         }
 

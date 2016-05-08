@@ -18,20 +18,11 @@
     "custom": {
       "mesh": ["SNEK"]
     }
-        /*"model": "examplemod:snek3.ogex",
-        "custom": {
-            "mesh": ["SNEK-MeshChild#0", "SNEK-MeshChild#1", "SNEK-MeshChild#2", "SNEK-MeshChild#3", "SNEK-MeshChild#4"]
-        }*/
-
   },
   "variants": {
     "normal": [{}],
     "inventory": [{
       "transform": "forge:default-block"
-      /*"cmf": "examplemod:engine",
-      "submodel": {
-        "ring": { "cmf": "examplemod:engine_ring" }
-      }*/
     }],
     "facing": {
       "down":  { "transform": { "rotation": { "x": 90  } } },
@@ -43,15 +34,15 @@
     },
     "static": {
       "true": {
-        /*"custom": {
-            "mesh": ["Base"]
-        }*/
+        "custom": {
+            "mesh": []
+        }
         //"cmf": "examplemod:engine"
       },
       "false": {
-        /*"custom": {
-            "mesh": ["Lid"]
-        }*/
+        "custom": {
+            "mesh": ["SNEK"]
+        }
         //"cmf": "examplemod:engine_ring"
       }
     },

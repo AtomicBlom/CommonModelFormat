@@ -220,9 +220,6 @@ public class Parser {
 
         for (final OgexIndexArray indexArray : mesh.getIndexArrays())
         {
-            //final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = ImmutableMultimap.builder();
-            //final List<Face> faces = Lists.newArrayList();
-
             int material = (int) indexArray.getMaterial();
             if (material >= brushList.size()) {
                 material = brushList.size() - 1;
@@ -342,17 +339,11 @@ public class Parser {
 
                 faces.add(face);
             }
-            //fixme: merge multiple instances of the same bruch to multiple faces.
-            /*final Mesh mesh1 = new Mesh(Pair.of(brush, faces));
-
-            meshBoneMapQueue.add(Pair.of(mesh1, boneWeightMapBuilder.build()));
-
-            meshes.add(mesh1);*/
         }
 
         for (final Map.Entry<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>>> brushPairEntry : listToBuild.entrySet())
         {
-            Brush brush = brushPairEntry.getKey();
+            final Brush brush = brushPairEntry.getKey();
             final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>> arrayListBuilderPair = brushPairEntry.getValue();
             final List<Face> faces = arrayListBuilderPair.getLeft();
             final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
@@ -383,7 +374,6 @@ public class Parser {
 
     private void getBrushes(OgexScene ogexScene) {
         for (final OgexMaterial ogexMaterial : ogexScene.getMaterials()) {
-
             final OgexColor diffuse = ogexMaterial.getColor("diffuse");
             Vector4f color = new Vector4f(1, 1, 1, 0);
             if (diffuse != null) {

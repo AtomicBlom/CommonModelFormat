@@ -2,9 +2,6 @@ package com.github.atomicblom.client.model.cmf.common;
 
 import javax.vecmath.Vector3f;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Face {
     private final Vertex v1, v2, v3, v4;
     private final Brush brush;

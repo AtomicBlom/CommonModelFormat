@@ -32,9 +32,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by codew on 24/03/2016.
- */
 public class BakedWrapper implements IPerspectiveAwareModel
 {
     private final Node<?> node;

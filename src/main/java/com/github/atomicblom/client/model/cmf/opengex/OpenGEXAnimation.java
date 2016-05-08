@@ -9,9 +9,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import javax.vecmath.AxisAngle4f;
 import javax.vecmath.Matrix4f;
 
-/**
- * Created by codew on 8/05/2016.
- */
 class OpenGEXAnimation implements IAnimation
 {
     private final ImmutableMap<OgexTransform, OgexTrack> tracks;
@@ -22,9 +19,9 @@ class OpenGEXAnimation implements IAnimation
     public OpenGEXAnimation(Iterable<OgexTransform> transforms, OgexAnimation ogexAnimation, Matrix4f upAxis)
     {
         this.upAxis = upAxis;
-
         this.upAxisInverted = new Matrix4f(upAxis);
         upAxisInverted.invert();
+
         final ImmutableMap.Builder<OgexTransform, OgexTrack> trackMapBuilder = ImmutableMap.builder();
         for(OgexTrack track : ogexAnimation)
         {

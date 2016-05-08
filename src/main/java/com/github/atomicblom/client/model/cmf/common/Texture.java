@@ -2,9 +2,6 @@ package com.github.atomicblom.client.model.cmf.common;
 
 import javax.vecmath.Vector2f;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Texture {
     public static Texture White = new Texture("builtin/white", 0, 0, new Vector2f(0, 0), new Vector2f(1, 1), 0);
     private final String path;

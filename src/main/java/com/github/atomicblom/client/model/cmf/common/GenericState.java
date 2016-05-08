@@ -6,9 +6,6 @@ import net.minecraftforge.common.model.IModelPart;
 import net.minecraftforge.common.model.IModelState;
 import net.minecraftforge.common.model.TRSRTransformation;
 
-/**
- * Created by codew on 24/03/2016.
- */
 public final class GenericState implements IModelState
 {
     private final IAnimation animation;

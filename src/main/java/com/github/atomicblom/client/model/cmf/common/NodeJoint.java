@@ -6,9 +6,6 @@ import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.common.model.animation.IJoint;
 import javax.vecmath.Matrix4f;
 
-/**
- * Created by codew on 24/03/2016.
- */
 final class NodeJoint implements IJoint
 {
     private final Node<?> node;

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.Set;
 
 /*
- * Loader for Blitz3D models.
+ * Loader for OpenGEX models.
  * To enable for your mod call INSTANCE.addDomain(modid).
  * If you need more control over accepted resources - extend the class, and register a new INSTANCE with ModelLoaderRegistry.
  */

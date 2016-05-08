@@ -3,9 +3,6 @@ package com.github.atomicblom.client.model.cmf.common;
 import javax.vecmath.Vector4f;
 import java.util.List;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Brush {
     private final String name;
     private final Vector4f color;

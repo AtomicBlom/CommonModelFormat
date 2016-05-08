@@ -2,9 +2,6 @@ package com.github.atomicblom.client.model.cmf.common;
 
 import net.minecraftforge.common.property.IUnlistedProperty;
 
-/**
- * Created by codew on 24/03/2016.
- */
 public enum GenericFrameProperty implements IUnlistedProperty<GenericState>
 {
     INSTANCE;
@@ -12,7 +9,7 @@ public enum GenericFrameProperty implements IUnlistedProperty<GenericState>
     @Override
     public String getName()
     {
-        return "B3DFrame";
+        return "GenericFrame";
     }
 
     @Override

@@ -14,9 +14,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Node<K extends IKind<K>> {
     private final String name;
     private final TRSRTransformation transformation;

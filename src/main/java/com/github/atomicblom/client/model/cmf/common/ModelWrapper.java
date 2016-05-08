@@ -22,9 +22,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * Created by codew on 24/03/2016.
- */
 public class ModelWrapper implements IRetexturableModel, IModelCustomData, IModelSimpleProperties, IAnimatedModel
 {
     private final ResourceLocation modelLocation;

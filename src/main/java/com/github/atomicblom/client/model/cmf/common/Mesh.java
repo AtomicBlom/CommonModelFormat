@@ -9,9 +9,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import javax.vecmath.Matrix4f;
 import java.util.*;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Mesh implements IKind<Mesh> {
     private Node<Mesh> parent;
     private final Brush brush;

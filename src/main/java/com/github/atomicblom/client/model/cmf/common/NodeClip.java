@@ -3,9 +3,6 @@ package com.github.atomicblom.client.model.cmf.common;
 import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.common.model.animation.IJointClip;
 
-/**
- * Created by codew on 1/05/2016.
- */
 class NodeClip implements IJointClip
 {
     private final Node<?> node;

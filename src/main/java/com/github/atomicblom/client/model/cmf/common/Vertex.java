@@ -11,9 +11,6 @@ import javax.vecmath.Vector3f;
 import javax.vecmath.Vector4f;
 import java.util.Arrays;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Vertex {
     private static Logger LOGGER = LogManager.getLogger();
 
@@ -33,10 +30,6 @@ public class Vertex {
         // geometry
         Float totalWeight = 0f;
         Matrix4f t = new Matrix4f();
-        final String name = mesh.getParent().getName();
-        if ("CMan0002-M3-Body-MeshChild#1".equals(name) && pos.x >= 0.5390030f && pos.x <= 0.5390040f) {
-            LOGGER.info("hmn");
-        }
         if (mesh.getWeightMap().get(this).isEmpty()) {
             t.add(animator.apply(mesh.getParent()));
         } else {

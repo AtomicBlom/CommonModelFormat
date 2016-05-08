@@ -1,8 +1,5 @@
 package com.github.atomicblom.client.model.cmf.opengex;
 
-/**
- * Created by codew on 4/11/2015.
- */
 public class OpenGEXException extends RuntimeException
 {
 

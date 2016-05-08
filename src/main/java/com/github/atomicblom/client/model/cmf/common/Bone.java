@@ -5,9 +5,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
-/**
- * Created by steblo on 23/03/2016.
- */
 public class Bone implements IKind<Bone> {
     private Node<Bone> parent;
     private final List<Pair<Vertex, Float>> data;

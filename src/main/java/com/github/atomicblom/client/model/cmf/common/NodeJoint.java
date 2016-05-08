@@ -18,6 +18,14 @@ final class NodeJoint implements IJoint
     @Override
     public TRSRTransformation getInvBindPose()
     {
+        if(node.getKind() instanceof Bone)
+        {
+            Bone bone = (Bone) node.getKind();
+            if(bone.getInvBindPose() != null)
+            {
+                return bone.getInvBindPose();
+            }
+        }
         Matrix4f m = node.getTransformation().getMatrix();
         m.invert();
         TRSRTransformation pose = new TRSRTransformation(m);

@@ -44,7 +44,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
 
     private ImmutableList<BakedQuad> quads;
 
-    public BakedWrapper(final Node<?> node, final IModelState state, final boolean smooth, final boolean gui3d, final VertexFormat format, final ImmutableSet<String> meshes, final ImmutableMap<String, TextureAtlasSprite> textures)
+    public BakedWrapper(Node<?> node, IModelState state, boolean smooth, boolean gui3d, VertexFormat format, ImmutableSet<String> meshes, ImmutableMap<String, TextureAtlasSprite> textures)
     {
         this.node = node;
         this.state = state;

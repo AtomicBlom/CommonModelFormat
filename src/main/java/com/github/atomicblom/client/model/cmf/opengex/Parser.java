@@ -5,6 +5,7 @@ import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
 import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,7 +32,7 @@ public class Parser {
     private final Map<OgexMaterial, Brush> brushes = Maps.newHashMap();
     private final Map<OgexBoneNode, Node<Bone>> ogexBoneToForgeBoneMap = Maps.newHashMap();
     private final List<Texture> textures = Lists.newArrayList();
-    private final Queue<Pair<Mesh, ImmutableMultimap<Vertex, Pair<Float, OgexBoneNode>>>> meshBoneMapQueue = Lists.newLinkedList();
+    private final Queue<Pair<Mesh, ImmutableMultimap<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>>> meshBoneMapQueue = Lists.newLinkedList();
 
     public Model parse() throws IOException {
         final OgexParser ogexParser = new OgexParser();
@@ -73,21 +74,24 @@ public class Parser {
 
     private void processMeshBoneMapQueue()
     {
-        for (final Pair<Mesh, ImmutableMultimap<Vertex, Pair<Float, OgexBoneNode>>> meshImmutableMultimapPair : meshBoneMapQueue)
+        for (final Pair<Mesh, ImmutableMultimap<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>> meshImmutableMultimapPair : meshBoneMapQueue)
         {
             final Mesh mesh = meshImmutableMultimapPair.getLeft();
             final ImmutableMultimap.Builder<Vertex, Pair<Float, Node<Bone>>> boneWeightMapBuilder = ImmutableMultimap.builder();
             final Set bonesUsed = Sets.newHashSet();
             for (final Vertex vertex : meshImmutableMultimapPair.getRight().keySet())
             {
-                final ImmutableCollection<Pair<Float, OgexBoneNode>> pairs = meshImmutableMultimapPair.getRight().get(vertex);
-                for (final Pair<Float, OgexBoneNode> pair : pairs)
+                final ImmutableCollection<Triple<Float, OgexBoneNode, TRSRTransformation>> pairs = meshImmutableMultimapPair.getRight().get(vertex);
+                for (final Triple<Float, OgexBoneNode, TRSRTransformation> triple : pairs)
                 {
-                    final Float weight = pair.getLeft();
-                    final OgexBoneNode ogexBoneNode = pair.getRight();
+                    final Float weight = triple.getLeft();
+                    final OgexBoneNode ogexBoneNode = triple.getMiddle();
+                    final TRSRTransformation invBindPose = triple.getRight();
 
                     final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode);
                     boneNode.getKind().getData().add(Pair.of(vertex, weight));
+                    // TODO check if bone instance can be shared with multiple inv bind poses, and make a copy if true
+                    boneNode.getKind().setInvBindPose(invBindPose);
                     boneWeightMapBuilder.put(vertex, Pair.of(weight, boneNode));
                     if (!bonesUsed.contains(boneNode)) {
                         bonesUsed.add(boneNode);
@@ -216,7 +220,7 @@ public class Parser {
 
         final Set<Integer> mappedVertices = Sets.newHashSet();
 
-        Map<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>>> listToBuild = Maps.newHashMap();
+        Map<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>>> listToBuild = Maps.newHashMap();
 
         for (final OgexIndexArray indexArray : mesh.getIndexArrays())
         {
@@ -230,11 +234,11 @@ public class Parser {
 
             if (!listToBuild.containsKey(brush)) {
                 listToBuild.put(brush,
-                        Pair.of(Lists.<Face>newArrayList(), ImmutableMultimap.<Vertex, Pair<Float,OgexBoneNode>>builder()));
+                        Pair.of(Lists.<Face>newArrayList(), ImmutableMultimap.<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>builder()));
             }
-            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>> arrayListBuilderPair = listToBuild.get(brush);
+            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>> arrayListBuilderPair = listToBuild.get(brush);
             final List<Face> faces = arrayListBuilderPair.getLeft();
-            final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
+            final ImmutableMultimap.Builder<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
 
             for (final long[] polyGroup : (long[][]) indexArray.getArray())
             {
@@ -317,9 +321,15 @@ public class Parser {
                         for (int boneId = 0; boneId < boneCount; ++boneId) {
                             final int boneIndex = skin.getBoneIndex().asIntArray()[aBone + boneId];
                             final OgexBoneNode ogexNode = (OgexBoneNode)skin.getSkeleton().getBoneNodes()[boneIndex];
+                            final Matrix4f m = new Matrix4f(skin.getSkeleton().getTransforms()[boneIndex]);
+                            m.transpose();
+                            // storing the inverse
+                            m.invert();
+                            m.mul(upMatrix, m);
+                            m.mul(upMatrixInverted);
                             final float boneWeight = skin.getBoneWeight()[aBone + boneId];
 
-                            boneWeightMapBuilder.put(vertex, Pair.of(boneWeight, ogexNode));
+                            boneWeightMapBuilder.put(vertex, Triple.of(boneWeight, ogexNode, new TRSRTransformation(m)));
                         }
                         mappedVertices.add(vertexIndex);
                     }
@@ -341,12 +351,12 @@ public class Parser {
             }
         }
 
-        for (final Map.Entry<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>>> brushPairEntry : listToBuild.entrySet())
+        for (final Map.Entry<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>>> brushPairEntry : listToBuild.entrySet())
         {
             final Brush brush = brushPairEntry.getKey();
-            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>> arrayListBuilderPair = brushPairEntry.getValue();
+            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>>> arrayListBuilderPair = brushPairEntry.getValue();
             final List<Face> faces = arrayListBuilderPair.getLeft();
-            final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
+            final ImmutableMultimap.Builder<Vertex, Triple<Float, OgexBoneNode, TRSRTransformation>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
 
             final Mesh mesh1 = new Mesh(Pair.of(brush, faces));
 

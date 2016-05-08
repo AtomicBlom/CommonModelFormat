@@ -15,6 +15,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.*;
 import net.minecraftforge.client.model.animation.IAnimatedModel;
 import net.minecraftforge.common.model.IModelState;
+import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.common.model.animation.IClip;
 import net.minecraftforge.fml.common.FMLLog;
 import java.util.Collection;
@@ -185,7 +186,7 @@ public class ModelWrapper implements IRetexturableModel, IModelCustomData, IMode
     @Override
     public IModelState getDefaultState()
     {
-        return null;
+        return TRSRTransformation.identity();
     }
 
     @Override

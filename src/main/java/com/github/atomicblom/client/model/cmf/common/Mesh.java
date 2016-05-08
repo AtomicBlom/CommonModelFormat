@@ -13,7 +13,6 @@ public class Mesh implements IKind<Mesh> {
     private Node<Mesh> parent;
     private final Brush brush;
     private final ImmutableList<Face> faces;
-    //private final ImmutableList<Bone> bones;
 
     private Set<Node<Bone>> bones = new HashSet<Node<Bone>>();
 

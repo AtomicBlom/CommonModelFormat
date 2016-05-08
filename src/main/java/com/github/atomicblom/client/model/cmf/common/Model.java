@@ -24,7 +24,7 @@ public class Model
         return textures;
     }
 
-    public Collection<Brush> getBrushes()
+    private Collection<Brush> getBrushes()
     {
         return brushes;
     }

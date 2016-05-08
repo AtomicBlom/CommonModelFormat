@@ -19,9 +19,9 @@ public class Mesh implements IKind<Mesh> {
 
     private ImmutableMultimap<Vertex, BoneWeight> weightMap = ImmutableMultimap.of();
 
-    public Mesh(Pair<Brush, List<Face>> data) {
-        brush = data.getLeft();
-        faces = ImmutableList.copyOf(data.getRight());
+    public Mesh(Brush brush, List<Face> faces) {
+        this.brush = brush;
+        this.faces = ImmutableList.copyOf(faces);
     }
 
     public ImmutableMultimap<Vertex, BoneWeight> getWeightMap() {

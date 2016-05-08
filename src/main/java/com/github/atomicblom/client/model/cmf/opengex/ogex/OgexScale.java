@@ -37,14 +37,19 @@
 package com.github.atomicblom.client.model.cmf.opengex.ogex;
 
 
+import com.github.atomicblom.client.model.cmf.opengex.OpenGEXException;
+import javax.vecmath.Vector2f;
+
 /**
  *
  *
  *  @author    Paul Speed
  */
 public abstract class OgexScale implements OgexTransform {
- 
-    public enum Kind { 
+
+    public abstract void applyTo(Vector2f scale);
+
+    public enum Kind {
         X("x"), Y("y"), Z("z"), Xyz("xyz");
                        
         private final String ogexName;
@@ -111,8 +116,23 @@ public abstract class OgexScale implements OgexTransform {
             super(kind);
             this.scale = scale;
         }
- 
-        @Override 
+
+        @Override
+        public void applyTo(Vector2f scale)
+        {
+            switch(getKind()) {
+                case X:
+                    scale.x = this.scale;
+                case Y:
+                    scale.y = this.scale;
+                case Z:
+                    throw new OpenGEXException("Cannot apply Z scaling to a Vector2f");
+                default:
+                    throw new IllegalArgumentException("Incompatible ComponentScale kind:" + getKind());
+            }
+        }
+
+        @Override
         public void setKind( Kind kind ) {
             switch( kind ) {
                 case X:
@@ -167,7 +187,14 @@ public abstract class OgexScale implements OgexTransform {
             scale = data;
         }
 
-        @Override 
+        @Override
+        public void applyTo(Vector2f scale)
+        {
+            scale.x = this.scale[0];
+            scale.y = this.scale[1];
+        }
+
+        @Override
         public void setKind( Kind kind ) {
             if( kind != Kind.Xyz ) {
                 throw new IllegalArgumentException("Incompatible Xyz kind:" + kind);

@@ -316,13 +316,13 @@ public class Parser
         return Pair.of(getBrush(brush_id), ret);
     }
 
-    private List<Pair<Vertex, Float>> bone() throws IOException
+    private List<VertexWeight> bone() throws IOException
     {
         chunk("BONE");
-        List<Pair<Vertex, Float>> ret = new ArrayList<Pair<Vertex, Float>>();
+        List<VertexWeight> ret = new ArrayList<VertexWeight>();
         while(buf.hasRemaining())
         {
-            ret.add(Pair.of(getVertex(buf.getInt()), buf.getFloat()));
+            ret.add(new VertexWeight(getVertex(buf.getInt()), buf.getFloat()));
         }
         dump("BONE(...)");
         popLimit();
@@ -398,7 +398,7 @@ public class Parser
         animations.push(HashBasedTable.<Integer, Optional<Node<?>>, Key>create());
         Triple<Integer, Integer, Float> animData = null;
         Pair<Brush, List<Face>> mesh = null;
-        List<Pair<Vertex, Float>> bone = null;
+        List<VertexWeight> bone = null;
         Map<Integer, Key> keys = new HashMap<Integer, Key>();
         List<Node<?>> nodes = new ArrayList<Node<?>>();
         String name = readString();
@@ -422,13 +422,13 @@ public class Parser
         Node<?> node;
         if(mesh != null)
         {
-            final Mesh meshKind = new Mesh(mesh);
+            final Mesh meshKind = new Mesh(mesh.getLeft(), mesh.getRight());
             Node<Mesh> mNode = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, meshKind);
 
             ImmutableMultimap.Builder<Vertex, BoneWeight> builder = ImmutableMultimap.builder();
             for (Node<Bone> childBone : meshKind.getBones()) {
-                for (Pair<Vertex, Float> b : childBone.getKind().getData()) {
-                    builder.put(b.getLeft(), new BoneWeight(childBone, b.getRight()));
+                for (VertexWeight b : childBone.getKind().getData()) {
+                    builder.put(b.getVertex(), new BoneWeight(childBone, b.getWeight()));
                 }
             }
 

@@ -1,8 +1,16 @@
 package com.github.atomicblom.client.model.cmf.opengex;
 
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexRotation.AxisRotation;
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexRotation.ComponentRotation;
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexRotation.QuaternionRotation;
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexScale.ComponentScale;
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexScale.XyzScale;
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.ComponentTranslation;
+import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.XyzTranslation;
 import com.google.common.collect.*;
 import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
+import com.google.common.collect.ImmutableMultimap.Builder;
 import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
@@ -14,45 +22,35 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.*;
+import java.util.Map.Entry;
 
-public class Parser {
-    private static Logger Logger = LogManager.getLogger();
+class Parser {
+    private static final Logger Logger = LogManager.getLogger();
 
     private final InputStream inputStream;
-    private Axis up;
-    private Matrix4f upMatrix;
-    private Matrix4f upMatrixInverted;
+    private Axis up = Axis.Y;
+    private final Matrix4f upMatrix = new Matrix4f();
+    private final Matrix4f upMatrixInverted = new Matrix4f();
 
-    public Parser(InputStream inputStream)
+    Parser(InputStream inputStream)
     {
         this.inputStream = inputStream;
+        upMatrix.setIdentity();
+        upMatrixInverted.setIdentity();
     }
 
     private final Map<OgexMaterial, Brush> brushes = Maps.newHashMap();
     private final Map<OgexBoneNode, Node<Bone>> ogexBoneToForgeBoneMap = Maps.newHashMap();
     private final List<Texture> textures = Lists.newArrayList();
-    private final Queue<Pair<Mesh, ImmutableMultimap<Vertex, BoneWeightInvertedBindPose>>> meshBoneMapQueue = Lists.newLinkedList();
+    private final Queue<UnprocessedMeshBoneMapEntry> meshBoneMapQueue = Lists.newLinkedList();
 
-    private class BoneWeightInvertedBindPose
-    {
-        private final Float weight;
-        private final OgexBoneNode ogexBoneNode;
-        private final TRSRTransformation invertedBindPose;
-
-        private BoneWeightInvertedBindPose(Float weight, OgexBoneNode ogexBoneNode, TRSRTransformation invertedBindPose) {
-            this.weight = weight;
-            this.ogexBoneNode = ogexBoneNode;
-            this.invertedBindPose = invertedBindPose;
-        }
-    }
-
-    public Model parse() throws IOException {
+    Model parse() throws IOException {
         final OgexParser ogexParser = new OgexParser();
         final Reader reader = new InputStreamReader(inputStream);
         final OgexScene ogexScene = ogexParser.parseScene(reader);
         up = ogexScene.getMetrics().getUp();
-        upMatrix = getMatrixForUpAxis(up);
-        upMatrixInverted = new Matrix4f(upMatrix);
+        upMatrix.set(getMatrixForUpAxis(up));
+        upMatrixInverted.set(upMatrix);
         upMatrixInverted.invert();
 
         getBrushes(ogexScene);
@@ -65,9 +63,9 @@ public class Parser {
         return model;
     }
 
-    private Matrix4f getMatrixForUpAxis(Axis up)
+    private static Matrix4f getMatrixForUpAxis(Axis up)
     {
-        Matrix4f upMatrix = new Matrix4f();
+        final Matrix4f upMatrix = new Matrix4f();
         if (up == Axis.Y) {
             upMatrix.setIdentity();
         } else if (up == Axis.Z) {
@@ -86,24 +84,24 @@ public class Parser {
 
     private void processMeshBoneMapQueue()
     {
-        for (final Pair<Mesh, ImmutableMultimap<Vertex, BoneWeightInvertedBindPose>> meshImmutableMultimapPair : meshBoneMapQueue)
+        for (final UnprocessedMeshBoneMapEntry meshBoneMapEntry : meshBoneMapQueue)
         {
-            final Mesh mesh = meshImmutableMultimapPair.getLeft();
-            final ImmutableMultimap.Builder<Vertex, BoneWeight> boneWeightMapBuilder = ImmutableMultimap.builder();
-            final Set bonesUsed = Sets.newHashSet();
-            for (final Vertex vertex : meshImmutableMultimapPair.getRight().keySet())
+            final Mesh mesh = meshBoneMapEntry.mesh;
+            final Builder<Vertex, BoneWeight> boneWeightMapBuilder = ImmutableMultimap.builder();
+            final Set<Node<Bone>> bonesUsed = Sets.newHashSet();
+
+            for (final Vertex vertex : meshBoneMapEntry.getVertices())
             {
-                final ImmutableCollection<BoneWeightInvertedBindPose> pairs = meshImmutableMultimapPair.getRight().get(vertex);
-                for (final BoneWeightInvertedBindPose boneWeightInformation : pairs)
+                for (final BoneWeightPose boneWeightPose : meshBoneMapEntry.getBoneWeightPose(vertex))
                 {
-                    final OgexBoneNode ogexBoneNode = boneWeightInformation.ogexBoneNode;
-                    final TRSRTransformation invBindPose = boneWeightInformation.invertedBindPose;
+                    final OgexBoneNode ogexBoneNode = boneWeightPose.ogexBoneNode;
+                    final TRSRTransformation invBindPose = boneWeightPose.invertedBindPose;
 
                     final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode);
-                    boneNode.getKind().getData().add(Pair.of(vertex, boneWeightInformation.weight));
+                    boneNode.getKind().getData().add(new VertexWeight(vertex, boneWeightPose.weight));
                     // TODO check if bone instance can be shared with multiple inv bind poses, and make a copy if true
                     boneNode.getKind().setInvBindPose(invBindPose);
-                    boneWeightMapBuilder.put(vertex, new BoneWeight(boneNode, boneWeightInformation.weight));
+                    boneWeightMapBuilder.put(vertex, new BoneWeight(boneNode, boneWeightPose.weight));
                     if (!bonesUsed.contains(boneNode))
                     {
                         bonesUsed.add(boneNode);
@@ -116,6 +114,7 @@ public class Parser {
         }
     }
 
+    @SuppressWarnings("ChainOfInstanceofChecks")
     private Node<?> createNode(OpenGEXNode openGEXNode) {
         final Node<?> node;
 
@@ -128,7 +127,7 @@ public class Parser {
 
         final List<Node<?>> childNodes = Lists.newArrayList();
         for (final OgexNode childOgexNode : openGEXNode) {
-            Node<?> childNode = createNode(childOgexNode);
+            final Node<?> childNode = createNode(childOgexNode);
             if (childNode != null) {
                 childNodes.add(childNode);
             }
@@ -150,21 +149,18 @@ public class Parser {
 
         if (openGEXNode instanceof OgexGeometryNode) {
             final OgexGeometryNode ogexGeometryNode = (OgexGeometryNode) openGEXNode;
-            final List<Mesh> mesh1 = createMesh(ogexGeometryNode);
-            if (mesh1.size() == 1) {
-                final Mesh mesh = mesh1.get(0);
-                if (mesh != null)
-                {
-                    node = Node.create(name, trsr, childNodes, mesh);
-                } else
-                {
-                    node = Node.create(name, trsr, childNodes, new Pivot());
-                }
+            final List<Mesh> createdMeshes = createMeshes(ogexGeometryNode);
+            if (createdMeshes.size() == 1) {
+                final Mesh mesh = createdMeshes.get(0);
+                node = mesh != null ?
+                        Node.create(name, trsr, childNodes, mesh) :
+                        Node.create(name, trsr, childNodes, new Pivot());
             } else {
                 int itemIndex = 0;
-                for (final Mesh mesh : mesh1)
+                for (final Mesh mesh : createdMeshes)
                 {
-                    childNodes.add(Node.create(name + "-MeshChild#" + (itemIndex++), trsr, Lists.<Node<?>>newArrayList(), mesh));
+                    childNodes.add(Node.create(name + "-MeshChild#" + itemIndex, trsr, Lists.<Node<?>>newArrayList(), mesh));
+                    itemIndex++;
                 }
 
                 node = Node.create(name, trsr, childNodes, new Pivot());
@@ -176,7 +172,7 @@ public class Parser {
             if (openGEXNode instanceof OgexBoneNode)
             {
                 final OgexBoneNode ogexBoneNode = (OgexBoneNode) openGEXNode;
-                Node<Bone> boneNode = Node.create(name, trsr, childNodes, new Bone());
+                final Node<Bone> boneNode = Node.create(name, trsr, childNodes, new Bone());
                 ogexBoneToForgeBoneMap.put(ogexBoneNode, boneNode);
                 node = boneNode;
             } else
@@ -192,17 +188,113 @@ public class Parser {
         return node;
     }
 
-    private List<Mesh> createMesh(OgexGeometryNode ogexGeometryNode) {
-        List<Mesh> meshes = Lists.newArrayList();
+    private List<Mesh> createMeshes(OgexGeometryNode ogexGeometryNode) {
+        final List<Mesh> meshes = Lists.newArrayList();
 
-        final OgexMesh mesh = ogexGeometryNode.getGeometry().getMesh();
-        final MeshType type = mesh.getType();
+        final OgexMesh ogexMesh = ogexGeometryNode.getGeometry().getMesh();
+        final MeshType type = ogexMesh.getType();
         if (type != MeshType.Quads && type != MeshType.Triangles)
         {
             throw new OpenGEXException("Attempting to generate a cmf for an unsupported OpenGL Mesh Type: " + type);
         }
 
-        final OgexSkin skin = mesh.getSkin();
+        final OgexSkin skin = ogexMesh.getSkin();
+        final int[] boneIndexTransform = getBoneIndexTransformation(skin);
+
+        final List<Brush> brushList = getBrushesForGeometryNode(ogexGeometryNode);
+
+        if (brushList.isEmpty()) {
+            return meshes;
+        }
+
+        final Map<Brush, BrushContents> listToBuild = Maps.newHashMap();
+
+        for (final OgexIndexArray indexArray : ogexMesh.getIndexArrays())
+        {
+            int material = (int) indexArray.getMaterial();
+            if (material >= brushList.size()) {
+                material = brushList.size() - 1;
+                Logger.warn("Model has been exported with multiple Material IDs, but not enough have been defined in the export.");
+            }
+
+            final Brush brush = brushList.get(material);
+
+            if (!listToBuild.containsKey(brush)) {
+                listToBuild.put(brush, new BrushContents(brush, type));
+            }
+            final BrushContents brushContents = listToBuild.get(brush);
+
+            processPartialMesh(ogexMesh, boneIndexTransform, indexArray, brushContents);
+        }
+
+        for (final Entry<Brush, BrushContents> brushPairEntry : listToBuild.entrySet())
+        {
+            final BrushContents brushContents = brushPairEntry.getValue();
+
+            final Mesh mesh = new Mesh(brushPairEntry.getKey(), brushContents.faces);
+
+            meshBoneMapQueue.add(new UnprocessedMeshBoneMapEntry(mesh, brushContents.getVertexWeights()));
+
+            meshes.add(mesh);
+        }
+
+        return meshes;
+    }
+
+    private void processPartialMesh(OgexMesh ogexMesh, int[] boneIndexTransform, OgexIndexArray indexArray, BrushContents brushContents)
+    {
+        final OgexSkin skin = ogexMesh.getSkin();
+        for (final long[] polyGroup : (long[][]) indexArray.getArray())
+        {
+            final Vertex[] vertices = new Vertex[polyGroup.length];
+            Vector3f normal = new Vector3f();
+
+            for (int i = 0; i < polyGroup.length; i++)
+            {
+                final int vertexIndex = (int) polyGroup[i];
+                final Pair<Vertex, Vector3f> createVertexResult = getVertex(ogexMesh, vertexIndex);
+                vertices[i] = createVertexResult.getLeft();
+                normal = createVertexResult.getRight();
+
+                if (skin != null) {
+                    final int boneCount = skin.getBoneCount().asIntArray()[vertexIndex];
+                    final int startingBoneIndex = boneIndexTransform[vertexIndex];
+
+                    for (int boneOffset = 0; boneOffset < boneCount; ++boneOffset) {
+                        final int boneIndex = skin.getBoneIndex().asIntArray()[startingBoneIndex + boneOffset];
+
+                        final OgexBoneNode ogexNode = (OgexBoneNode)skin.getSkeleton().getBoneNodes()[boneIndex];
+                        final float boneWeight = skin.getBoneWeight()[startingBoneIndex + boneOffset];
+
+                        final Matrix4f poseTranformation = new Matrix4f(skin.getSkeleton().getTransforms()[boneIndex]);
+                        poseTranformation.transpose();
+                        poseTranformation.invert();
+                        poseTranformation.mul(upMatrix, poseTranformation);
+                        poseTranformation.mul(upMatrixInverted);
+
+                        final BoneWeightPose boneWeightPose = new BoneWeightPose(boneWeight, ogexNode, poseTranformation);
+                        brushContents.addBoneWeightPoseToVertex(vertices[i], boneWeightPose);
+                    }
+                }
+            }
+
+            brushContents.addFace(vertices, normal);
+        }
+    }
+
+    private List<Brush> getBrushesForGeometryNode(OgexGeometryNode ogexGeometryNode)
+    {
+        final List<Brush> brushList = Lists.newArrayList();
+        final Iterable<OgexMaterial> materials = ogexGeometryNode.getMaterials();
+        for (final OgexMaterial ogexMaterial : materials) {
+            final Brush brush = brushes.get(ogexMaterial);
+            brushList.add(brush);
+        }
+        return brushList;
+    }
+
+    private static int[] getBoneIndexTransformation(OgexSkin skin)
+    {
         int[] boneIndexTransform = null;
         if (skin != null) {
 
@@ -216,168 +308,72 @@ public class Parser {
                 currentBoneIndex += boneCounts[i];
             }
         }
+        return boneIndexTransform;
+    }
 
-        final List<Brush> brushList = Lists.newArrayList();
-        final Iterable<OgexMaterial> materials = ogexGeometryNode.getMaterials();
-        for (final OgexMaterial ogexMaterial : materials) {
-            final Brush brush = brushes.get(ogexMaterial);
-            brushList.add(brush);
-        }
+    private Pair<Vertex, Vector3f> getVertex(OgexMesh mesh, int vertexIndex)
+    {
+        float[] positionArray = null;
+        float[] normalArray = null;
+        float[] texcoordArray = null;
+        float[] colorArray = null;
 
-        if (brushList.isEmpty()) {
-            return meshes;
-        }
-
-        final List<OgexVertexArray> vertexArrays = mesh.getVertexArrays();
-
-        final Set<Integer> mappedVertices = Sets.newHashSet();
-
-        Map<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, BoneWeightInvertedBindPose>>> listToBuild = Maps.newHashMap();
-
-        for (final OgexIndexArray indexArray : mesh.getIndexArrays())
+        for (final OgexVertexArray array : mesh.getVertexArrays())
         {
-            int material = (int) indexArray.getMaterial();
-            if (material >= brushList.size()) {
-                material = brushList.size() - 1;
-                Logger.warn("Model has been exported with multiple Material IDs, but not enough have been defined in the export.");
-            }
-
-            final Brush brush = brushList.get(material);
-
-            if (!listToBuild.containsKey(brush)) {
-                listToBuild.put(brush,
-                        Pair.of(Lists.<Face>newArrayList(), ImmutableMultimap.<Vertex, BoneWeightInvertedBindPose>builder()));
-            }
-            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, BoneWeightInvertedBindPose>> arrayListBuilderPair = listToBuild.get(brush);
-            final List<Face> faces = arrayListBuilderPair.getLeft();
-            final ImmutableMultimap.Builder<Vertex, BoneWeightInvertedBindPose> boneWeightMapBuilder = arrayListBuilderPair.getRight();
-
-            for (final long[] polyGroup : (long[][]) indexArray.getArray())
+            if ("position".equals(array.getName()))
             {
-                final Vertex[] vertices = new Vertex[polyGroup.length];
-                final Vector3f normal = new Vector3f();
-
-                for (int i = 0; i < polyGroup.length; i++)
-                {
-                    final long longVertexIndex = polyGroup[i];
-                    final int vertexIndex = (int) longVertexIndex;
-
-                    float[] positionArray = null;
-                    float[] normalArray = null;
-                    float[] texcoordArray = null;
-                    float[] colorArray = null;
-
-                    for (final OgexVertexArray array : vertexArrays)
-                    {
-                        if ("position".equals(array.getName()))
-                        {
-                            positionArray = array.getArray2()[vertexIndex];
-                        } else if ("normal".equals(array.getName()))
-                        {
-                            normalArray = array.getArray2()[vertexIndex];
-                        } else if ("color".equals(array.getName()))
-                        {
-                            colorArray = array.getArray2()[vertexIndex];
-                        } else if ("texcoord".equals(array.getName()))
-                        {
-                            texcoordArray = array.getArray2()[vertexIndex];
-                        }
-                    }
-
-                    final Vector3f position = new Vector3f();
-                    final Vector4f colour = new Vector4f();
-
-                    position.x = positionArray[0];
-                    position.y = positionArray[1];
-                    position.z = positionArray[2];
-
-                    normal.x = normalArray[0];
-                    normal.y = normalArray[1];
-                    normal.z = normalArray[2];
-
-                    upMatrix.transform(position);
-                    upMatrix.transform(normal);
-
-                    //FIXME: don't assume arrays are populated, update for appropriate format.
-
-                    if (colorArray != null)
-                    {
-                        colour.x = colorArray[0];
-                        colour.y = colorArray[1];
-                        colour.z = colorArray[2];
-                        colour.w = colorArray[3];
-                    } else {
-                        colour.x = 1;
-                        colour.y = 1;
-                        colour.z = 1;
-                        colour.w = 1;
-                    }
-
-                    final Vector4f[] uvs;
-                    if (texcoordArray != null)
-                    {
-                        uvs = new Vector4f[] {
-                                new Vector4f(texcoordArray[0], 1 - texcoordArray[1], 0, 1)
-                        };
-                    } else {
-                        uvs = new Vector4f[] {
-                                new Vector4f(0.5f, 0.4f, 0, 1)
-                        };
-                    }
-
-                    final Vertex vertex = new Vertex(position, normal, colour, uvs);
-
-                    if (skin != null /*&& !mappedVertices.contains(vertexIndex)*/) {
-                        final int boneCount = skin.getBoneCount().asIntArray()[vertexIndex];
-                        final int aBone = boneIndexTransform[vertexIndex];
-                        for (int boneId = 0; boneId < boneCount; ++boneId) {
-                            final int boneIndex = skin.getBoneIndex().asIntArray()[aBone + boneId];
-                            final OgexBoneNode ogexNode = (OgexBoneNode)skin.getSkeleton().getBoneNodes()[boneIndex];
-                            final Matrix4f m = new Matrix4f(skin.getSkeleton().getTransforms()[boneIndex]);
-                            m.transpose();
-                            // storing the inverse
-                            m.invert();
-                            m.mul(upMatrix, m);
-                            m.mul(upMatrixInverted);
-                            final float boneWeight = skin.getBoneWeight()[aBone + boneId];
-
-                            boneWeightMapBuilder.put(vertex, new BoneWeightInvertedBindPose(boneWeight, ogexNode, new TRSRTransformation(m)));
-                        }
-                        mappedVertices.add(vertexIndex);
-                    }
-
-                    vertices[i] = vertex;
-                }
-
-                final Face face;
-
-                if (type == MeshType.Triangles) {
-                    face = new Face(vertices[0], vertices[1], vertices[2], brush, normal);
-                } else if (type == MeshType.Quads) {
-                    face = new Face(vertices[0], vertices[1], vertices[2], vertices[3], brush, normal);
-                } else {
-                    throw new OpenGEXException("Attempting to generate a cmf for an unsupported OpenGL Mesh Type: " + type);
-                }
-
-                faces.add(face);
+                positionArray = array.getArray2()[vertexIndex];
+            } else if ("normal".equals(array.getName()))
+            {
+                normalArray = array.getArray2()[vertexIndex];
+            } else if ("color".equals(array.getName()))
+            {
+                colorArray = array.getArray2()[vertexIndex];
+            } else if ("texcoord".equals(array.getName()))
+            {
+                texcoordArray = array.getArray2()[vertexIndex];
             }
         }
 
-        for (final Map.Entry<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, BoneWeightInvertedBindPose>>> brushPairEntry : listToBuild.entrySet())
+        final Vector3f position = new Vector3f(0, 0, 0);
+        final Vector4f colour = new Vector4f(1, 1, 1, 1);
+        final Vector3f normal = new Vector3f(0, 0, 0);
+        Vector4f[] uvs = { new Vector4f(0.5f, 0.4f, 0, 1) };
+
+        if (positionArray != null)
         {
-            final Brush brush = brushPairEntry.getKey();
-            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, BoneWeightInvertedBindPose>> arrayListBuilderPair = brushPairEntry.getValue();
-            final List<Face> faces = arrayListBuilderPair.getLeft();
-            final ImmutableMultimap.Builder<Vertex, BoneWeightInvertedBindPose> boneWeightMapBuilder = arrayListBuilderPair.getRight();
-
-            final Mesh mesh1 = new Mesh(Pair.of(brush, faces));
-
-            meshBoneMapQueue.add(Pair.of(mesh1, boneWeightMapBuilder.build()));
-
-            meshes.add(mesh1);
+            position.x = positionArray[0];
+            position.y = positionArray[1];
+            position.z = positionArray[2];
+            upMatrix.transform(position);
         }
 
-        return meshes;
+        if (normalArray != null)
+        {
+            normal.x = normalArray[0];
+            normal.y = normalArray[1];
+            normal.z = normalArray[2];
+            upMatrix.transform(normal);
+        }
+
+        if (colorArray != null)
+        {
+            colour.x = colorArray[0];
+            colour.y = colorArray[1];
+            colour.z = colorArray[2];
+            colour.w = colorArray[3];
+        }
+
+        if (texcoordArray != null)
+        {
+            uvs = new Vector4f[] {
+                    new Vector4f(texcoordArray[0], 1 - texcoordArray[1], 0, 1)
+            };
+        }
+
+        final Vertex vertex = new Vertex(position, normal, colour, uvs);
+
+        return Pair.of(vertex, normal);
     }
 
     private TRSRTransformation getTRSRTransformationFromTransforms(List<OgexTransform> transforms) {
@@ -403,10 +399,6 @@ public class Parser {
             }
             final String name = ogexMaterial.getName();
 
-            final float shininess = 0.0f;
-            final int blend = 1;
-            final int fx = 0;
-
             final List<Texture> brushTextures = Lists.newArrayList();
 
             Texture texture = getTextureFromOgexTexture(ogexMaterial.getTexture("diffuse"));
@@ -414,78 +406,113 @@ public class Parser {
 
             brushTextures.add(texture);
 
+            final int blend = 1;
+            final int fx = 0;
+            final float shininess = 0.0f;
             brushes.put(ogexMaterial, new Brush(name, color, shininess, blend, fx, brushTextures));
         }
     }
 
-    private Texture getTextureFromOgexTexture(OgexTexture texture) {
+    @SuppressWarnings("ChainOfInstanceofChecks")
+    private static Texture getTextureFromOgexTexture(OgexTexture texture) {
         if (texture == null) {
             return Texture.White;
         }
         final String path = texture.getTexture();
-        final Vector2f scale = new Vector2f(1, 1);
-        final Vector2f position = new Vector2f(0, 0);
-        float rotation = 0f;
+
+        Vector2f scale = new Vector2f(1, 1);
+        Vector2f translation = new Vector2f(0, 0);
+        float rotation = 0.0f;
         for (final OgexTransform ogexTransform : texture.getTransforms()) {
-            if (ogexTransform instanceof OgexScale.ComponentScale) {
-                final OgexScale.ComponentScale ogexScale = (OgexScale.ComponentScale) ogexTransform;
-                if (ogexScale.getKind().getOgexName().equals("X"))
-                {
-                    scale.x = ogexScale.getScale();
-
-                } else if (ogexScale.getKind().getOgexName().equals("Y"))
-                {
-                    scale.y = ogexScale.getScale();
-
-                } else if (ogexScale.getKind().getOgexName().equals("Z"))
-                {
-                    throw new UnsupportedOperationException("OGEX: Attempt to scale a texture by the 3rd dimension?");
-                }
-            } else if (ogexTransform instanceof OgexScale.XyzScale) {
-                final OgexScale.XyzScale ogexScale = (OgexScale.XyzScale) ogexTransform;
-                scale.x = ogexScale.getScale()[0];
-                scale.y = ogexScale.getScale()[1];
-            } else if (ogexTransform instanceof OgexRotation.AxisRotation) {
-                final OgexRotation.AxisRotation ogexRotation = (OgexRotation.AxisRotation) ogexTransform;
-                //FIXME: I have *NO* idea which axis this comes in as.
-                rotation = ogexRotation.getAngle();
-            } else if (ogexTransform instanceof OgexRotation.ComponentRotation) {
-                final OgexRotation.ComponentRotation ogexRotation = (OgexRotation.ComponentRotation) ogexTransform;
-                rotation = ogexRotation.getAngle();
-            } else if (ogexTransform instanceof OgexRotation.QuaternionRotation) {
-                throw new UnsupportedOperationException("OGEX: Attempt to rotate a texture using a Quaternion");
-            } else if (ogexTransform instanceof OgexTranslation.ComponentTranslation) {
-                final OgexTranslation.ComponentTranslation ogexTranslation = (OgexTranslation.ComponentTranslation) ogexTransform;
-                if (ogexTranslation.getKind().getOgexName().equals("X"))
-                {
-                    position.x = ogexTranslation.getTranslation();
-
-                } else if (ogexTranslation.getKind().getOgexName().equals("Y"))
-                {
-                    position.y = ogexTranslation.getTranslation();
-
-                } else if (ogexTranslation.getKind().getOgexName().equals("Z"))
-                {
-                    throw new UnsupportedOperationException("OGEX: Attempt to translate a texture by the 3rd dimension?");
-                }
-            } else if (ogexTransform instanceof OgexTranslation.XyzTranslation) {
-                final OgexTranslation.XyzTranslation ogexTranslation = (OgexTranslation.XyzTranslation) ogexTransform;
-                position.x = ogexTranslation.getTranslation()[0];
-                position.y = ogexTranslation.getTranslation()[1];
+            if (ogexTransform instanceof OgexScale) {
+                scale = getOgexScale((OgexScale)ogexTransform);
+            } else if (ogexTransform instanceof OgexRotation) {
+                rotation = getOgexRotation((OgexRotation)ogexTransform);
+            } else if (ogexTransform instanceof OgexTranslation) {
+                translation = getOgexTranslation((OgexTranslation)ogexTransform);
             }
         }
 
-        //FIXME: I have no idea what opengex's intention was with these two flags.
+        //I have no idea what opengex's intention was with these two flags.
         final int flags = 0;
         final int blend = 0;
 
-        return new Texture(path, flags, blend, position, scale, rotation);
+        return new Texture(path, flags, blend, translation, scale, rotation);
     }
 
-    private Texture getSingleTextureFromList(Texture texture, List<Texture> textures) {
+    @SuppressWarnings({"ChainOfInstanceofChecks", "UnnecessarilyQualifiedInnerClassAccess"})
+    private static Vector2f getOgexTranslation(OgexTranslation ogexTransform)
+    {
+        final Vector2f translation = new Vector2f();
+        if (ogexTransform instanceof ComponentTranslation) {
+            final ComponentTranslation ogexTranslation = (ComponentTranslation) ogexTransform;
+            if (ogexTranslation.getKind() == OgexTranslation.Kind.X)
+            {
+                translation.x = ogexTranslation.getTranslation();
+
+            } else if (ogexTranslation.getKind() == OgexTranslation.Kind.Y)
+            {
+                translation.y = ogexTranslation.getTranslation();
+
+            } else if (ogexTranslation.getKind() == OgexTranslation.Kind.Z)
+            {
+                throw new UnsupportedOperationException("OGEX: Attempt to translate a texture by the 3rd dimension?");
+            }
+        } else if (ogexTransform instanceof XyzTranslation) {
+            final XyzTranslation ogexTranslation = (XyzTranslation) ogexTransform;
+            translation.x = ogexTranslation.getTranslation()[0];
+            translation.y = ogexTranslation.getTranslation()[1];
+        }
+        return translation;
+    }
+
+    @SuppressWarnings("ChainOfInstanceofChecks")
+    private static float getOgexRotation(OgexRotation ogexTransform)
+    {
+        float rotation = 0;
+        if (ogexTransform instanceof AxisRotation) {
+            final AxisRotation ogexRotation = (AxisRotation) ogexTransform;
+            //note: I have *NO* idea which axis this comes in as.
+            rotation = ogexRotation.getAngle();
+        } else if (ogexTransform instanceof ComponentRotation) {
+            final ComponentRotation ogexRotation = (ComponentRotation) ogexTransform;
+            rotation = ogexRotation.getAngle();
+        } else if (ogexTransform instanceof QuaternionRotation) {
+            throw new UnsupportedOperationException("OGEX: Attempt to rotate a texture using a Quaternion");
+        }
+        return rotation;
+    }
+
+    @SuppressWarnings({"ChainOfInstanceofChecks", "UnnecessarilyQualifiedInnerClassAccess"})
+    private static Vector2f getOgexScale(OgexScale ogexTransform)
+    {
+        final Vector2f scale = new Vector2f();
+        if (ogexTransform instanceof ComponentScale) {
+            final ComponentScale ogexScale = (ComponentScale) ogexTransform;
+
+            if (ogexScale.getKind() == OgexScale.Kind.X)
+            {
+                scale.x = ogexScale.getScale();
+
+            } else if (ogexScale.getKind() == OgexScale.Kind.Y)
+            {
+                scale.y = ogexScale.getScale();
+
+            } else if (ogexScale.getKind() == OgexScale.Kind.Z)
+            {
+                throw new UnsupportedOperationException("OGEX: Attempt to scale a texture by the 3rd dimension?");
+            }
+        } else if (ogexTransform instanceof XyzScale) {
+            final XyzScale ogexScale = (XyzScale) ogexTransform;
+            scale.x = ogexScale.getScale()[0];
+            scale.y = ogexScale.getScale()[1];
+        }
+        return scale;
+    }
+
+    private static Texture getSingleTextureFromList(Texture texture, List<Texture> textures) {
         for (final Texture existingTexture : textures) {
-            boolean matches;
-            matches = existingTexture.getPath().equals(texture.getPath());
+            boolean matches = existingTexture.getPath().equals(texture.getPath());
             matches &= existingTexture.getBlend() == texture.getBlend();
             matches &= existingTexture.getFlags() == texture.getFlags();
             matches &= existingTexture.getRot() == texture.getRot();
@@ -502,4 +529,75 @@ public class Parser {
         return texture;
     }
 
+    @SuppressWarnings("ClassHasNoToStringMethod")
+    private static class BoneWeightPose
+    {
+        private final Float weight;
+        private final OgexBoneNode ogexBoneNode;
+        private final TRSRTransformation invertedBindPose;
+
+        private BoneWeightPose(Float weight, OgexBoneNode ogexBoneNode, Matrix4f invertedBindPose) {
+            this.weight = weight;
+            this.ogexBoneNode = ogexBoneNode;
+            this.invertedBindPose = new TRSRTransformation(invertedBindPose);
+        }
+    }
+
+    @SuppressWarnings("ClassHasNoToStringMethod")
+    private static class UnprocessedMeshBoneMapEntry {
+        private final Mesh mesh;
+        private final Multimap<Vertex, BoneWeightPose> verticesToProcess;
+
+        UnprocessedMeshBoneMapEntry(Mesh mesh, Multimap<Vertex, BoneWeightPose> verticesToProcess) {
+
+            this.mesh = mesh;
+            this.verticesToProcess = verticesToProcess;
+        }
+
+        Set<Vertex> getVertices() {
+            return verticesToProcess.keySet();
+        }
+
+        Iterable<BoneWeightPose> getBoneWeightPose(Vertex vertex)
+        {
+            return verticesToProcess.get(vertex);
+        }
+    }
+
+    private static class BrushContents
+    {
+        private final List<Face> faces = Lists.newArrayList();
+        private final Builder<Vertex, BoneWeightPose> vertexWeights = ImmutableMultimap.builder();
+        private final Brush brush;
+        private final MeshType type;
+
+        BrushContents(Brush brush, MeshType type)
+        {
+            this.brush = brush;
+
+            this.type = type;
+        }
+
+        void addFace(Vertex[] vertices, Vector3f normal)
+        {
+            final Face face;
+            if (type == MeshType.Triangles) {
+                face = new Face(vertices[0], vertices[1], vertices[2], brush, normal);
+            } else if (type == MeshType.Quads) {
+                face = new Face(vertices[0], vertices[1], vertices[2], vertices[3], brush, normal);
+            } else {
+                throw new OpenGEXException("Attempting to generate a cmf for an unsupported OpenGL Mesh Type: " + type);
+            }
+            faces.add(face);
+        }
+
+        void addBoneWeightPoseToVertex(Vertex vertex, BoneWeightPose boneWeightPose)
+        {
+            vertexWeights.put(vertex, boneWeightPose);
+        }
+
+        Multimap<Vertex, BoneWeightPose> getVertexWeights() {
+            return vertexWeights.build();
+        }
+    }
 }

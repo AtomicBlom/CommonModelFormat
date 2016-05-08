@@ -9,9 +9,9 @@ import java.util.List;
 public class Bone implements IKind<Bone> {
     private Node<Bone> parent;
     private TRSRTransformation invBindPose;
-    private final List<Pair<Vertex, Float>> data;
+    private final List<VertexWeight> data;
 
-    public Bone(List<Pair<Vertex, Float>> data) {
+    public Bone(List<VertexWeight> data) {
         this.data = data;
     }
 
@@ -19,7 +19,7 @@ public class Bone implements IKind<Bone> {
         data = Lists.newArrayList();
     }
 
-    public List<Pair<Vertex, Float>> getData() {
+    public List<VertexWeight> getData() {
         return data;
     }
 

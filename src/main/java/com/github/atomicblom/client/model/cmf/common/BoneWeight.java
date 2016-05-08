@@ -1,8 +1,5 @@
 package com.github.atomicblom.client.model.cmf.common;
 
-import com.github.atomicblom.client.model.cmf.common.Bone;
-import com.github.atomicblom.client.model.cmf.common.Node;
-
 public class BoneWeight
 {
     private final Node<Bone> boneNode;
@@ -25,3 +22,4 @@ public class BoneWeight
         return weight;
     }
 }
+

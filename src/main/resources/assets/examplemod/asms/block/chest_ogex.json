@@ -11,7 +11,6 @@
     "closed": [ "apply", "#model", 0 ],
     "opening": [
       "trigger_positive",
-      //[ "slerp", "#closed", "#open", "#identity", "#progress" ],
       [ "apply", "#model", [ "compose", [ "*", "#speed" ], "#progress"] ],
       "#trigger_anim",
       "!transition:open"
@@ -19,7 +18,6 @@
     "open": [ "apply", "#model", 10 ],
     "closing": [
       "trigger_positive",
-      //[ "slerp", "#open", "#closed", "#identity", "#progress" ],
       [ "apply", "#model", [ "compose", [ "*+*", -1, 1, "#speed" ], "#progress" ] ],
       "#trigger_anim",
       "!transition:closed"

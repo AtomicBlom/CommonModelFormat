@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableSet;
 import net.minecraftforge.common.model.animation.JointClips.IdentityJointClip;
 
 // FIXME: is this fast enough?
-public enum GenericClip implements IClip
+public enum Clip implements IClip
 {
     INSTANCE;
 

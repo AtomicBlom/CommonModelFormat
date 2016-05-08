@@ -1,7 +1,7 @@
 package com.github.atomicblom.client.model.cmf.opengex;
 
 import com.google.common.collect.ImmutableSet;
-import com.github.atomicblom.client.model.cmf.common.GenericModel;
+import com.github.atomicblom.client.model.cmf.common.Model;
 import com.github.atomicblom.client.model.cmf.common.Mesh;
 import com.github.atomicblom.client.model.cmf.common.ModelWrapper;
 import net.minecraft.client.resources.IResource;
@@ -29,7 +29,7 @@ public enum OpenGEXLoader implements ICustomModelLoader
     private IResourceManager manager;
 
     private final Set<String> enabledDomains = new HashSet<String>();
-    private final Map<ResourceLocation, GenericModel> cache = new HashMap<ResourceLocation, GenericModel>();
+    private final Map<ResourceLocation, Model> cache = new HashMap<ResourceLocation, Model>();
 
     public void addDomain(String domain)
     {
@@ -72,7 +72,7 @@ public enum OpenGEXLoader implements ICustomModelLoader
                     else throw e;
                 }
                 Parser parser = new Parser(resource.getInputStream());
-                GenericModel model = parser.parse();
+                Model model = parser.parse();
                 cache.put(file, model);
             }
             catch(IOException e)
@@ -84,7 +84,7 @@ public enum OpenGEXLoader implements ICustomModelLoader
                 throw new OpenGEXException("Error while loading OpenGEX resource " + file, ex);
             }
         }
-        GenericModel model = cache.get(file);
+        Model model = cache.get(file);
         if(model == null) throw new LoaderException("Error loading cmf previously: " + file);
         if(!(model.getRoot().getKind() instanceof Mesh))
         {

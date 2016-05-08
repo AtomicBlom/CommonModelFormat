@@ -33,7 +33,7 @@ public class Parser {
     private final List<Texture> textures = Lists.newArrayList();
     private final Queue<Pair<Mesh, ImmutableMultimap<Vertex, Pair<Float, OgexBoneNode>>>> meshBoneMapQueue = Lists.newLinkedList();
 
-    public GenericModel parse() throws IOException {
+    public Model parse() throws IOException {
         final OgexParser ogexParser = new OgexParser();
         final Reader reader = new InputStreamReader(inputStream);
         final OgexScene ogexScene = ogexParser.parseScene(reader);
@@ -48,7 +48,7 @@ public class Parser {
         processMeshBoneMapQueue();
 
         //Meshes is not currently used.
-        GenericModel model = new GenericModel(textures, brushes.values(), rootNode, null);
+        Model model = new Model(textures, brushes.values(), rootNode, null);
         return model;
     }
 

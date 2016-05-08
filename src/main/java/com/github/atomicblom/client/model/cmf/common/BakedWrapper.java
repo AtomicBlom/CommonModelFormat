@@ -41,33 +41,10 @@ public class BakedWrapper implements IPerspectiveAwareModel
     private final VertexFormat format;
     private final ImmutableSet<String> meshes;
     private final ImmutableMap<String, TextureAtlasSprite> textures;
-    private final LoadingCache<Integer, GenericState> cache;
 
     private ImmutableList<BakedQuad> quads;
 
     public BakedWrapper(final Node<?> node, final IModelState state, final boolean smooth, final boolean gui3d, final VertexFormat format, final ImmutableSet<String> meshes, final ImmutableMap<String, TextureAtlasSprite> textures)
-    {
-        this(node, state, smooth, gui3d, format, meshes, textures, CacheBuilder.newBuilder()
-                .maximumSize(128)
-                .expireAfterAccess(2, TimeUnit.MINUTES)
-                .<Integer, GenericState>build(new CacheLoader<Integer, GenericState>()
-                {
-                    @Override
-                    public GenericState load(Integer frame) throws Exception
-                    {
-                        IModelState parent = state;
-                        IAnimation newAnimation = node.getAnimation();
-                        if (parent instanceof GenericState)
-                        {
-                            GenericState ps = (GenericState) parent;
-                            parent = ps.getParent();
-                        }
-                        return new GenericState(newAnimation, frame, frame, 0, parent);
-                    }
-                }));
-    }
-
-    public BakedWrapper(Node<?> node, IModelState state, boolean smooth, boolean gui3d, VertexFormat format, ImmutableSet<String> meshes, ImmutableMap<String, TextureAtlasSprite> textures, LoadingCache<Integer, GenericState> cache)
     {
         this.node = node;
         this.state = state;
@@ -76,7 +53,6 @@ public class BakedWrapper implements IPerspectiveAwareModel
         this.format = format;
         this.meshes = meshes;
         this.textures = textures;
-        this.cache = cache;
     }
 
     @Override
@@ -87,40 +63,10 @@ public class BakedWrapper implements IPerspectiveAwareModel
         if (state instanceof IExtendedBlockState)
         {
             IExtendedBlockState exState = (IExtendedBlockState) state;
-            if (exState.getUnlistedNames().contains(GenericFrameProperty.INSTANCE))
-            {
-                GenericState s = exState.getValue(GenericFrameProperty.INSTANCE);
-                if (s != null)
-                {
-                    //return getCachedModel(s.getFrame());
-                    IModelState parent = this.state;
-                    IAnimation newAnimation = s.getAnimation();
-                    if (parent instanceof GenericState)
-                    {
-                        GenericState ps = (GenericState) parent;
-                        parent = ps.getParent();
-                    }
-                    if (newAnimation == null)
-                    {
-                        newAnimation = node.getAnimation();
-                    }
-                    if (s.getFrame() == s.getNextFrame())
-                    {
-                        modelState = cache.getUnchecked(s.getFrame());
-                    } else
-                    {
-                        modelState = new GenericState(newAnimation, s.getFrame(), s.getNextFrame(), s.getProgress(), parent);
-                    }
-                }
-            } else if (exState.getUnlistedNames().contains(Properties.AnimationProperty))
+            if (exState.getUnlistedNames().contains(Properties.AnimationProperty))
             {
                 // FIXME: should animation state handle the parent state, or should it remain here?
                 IModelState parent = this.state;
-                if (parent instanceof GenericState)
-                {
-                    GenericState ps = (GenericState) parent;
-                    parent = ps.getParent();
-                }
                 IModelState newState = exState.getValue(Properties.AnimationProperty);
                 if (newState != null)
                 {

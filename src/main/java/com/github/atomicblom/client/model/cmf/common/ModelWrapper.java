@@ -15,7 +15,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.*;
 import net.minecraftforge.client.model.animation.IAnimatedModel;
 import net.minecraftforge.common.model.IModelState;
-import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.common.model.animation.IClip;
 import net.minecraftforge.fml.common.FMLLog;
 import java.util.Collection;
@@ -25,19 +24,19 @@ import java.util.Map;
 public class ModelWrapper implements IRetexturableModel, IModelCustomData, IModelSimpleProperties, IAnimatedModel
 {
     private final ResourceLocation modelLocation;
-    private final GenericModel model;
+    private final Model model;
     private final ImmutableSet<String> meshes;
     private final ImmutableMap<String, ResourceLocation> textures;
     private final boolean smooth;
     private final boolean gui3d;
     private final int defaultKey;
 
-    public ModelWrapper(ResourceLocation modelLocation, GenericModel model, ImmutableSet<String> meshes, boolean smooth, boolean gui3d, int defaultKey)
+    public ModelWrapper(ResourceLocation modelLocation, Model model, ImmutableSet<String> meshes, boolean smooth, boolean gui3d, int defaultKey)
     {
         this(modelLocation, model, meshes, smooth, gui3d, defaultKey, buildTextures(model.getTextures()));
     }
 
-    public ModelWrapper(ResourceLocation modelLocation, GenericModel model, ImmutableSet<String> meshes, boolean smooth, boolean gui3d, int defaultKey, ImmutableMap<String, ResourceLocation> textures)
+    public ModelWrapper(ResourceLocation modelLocation, Model model, ImmutableSet<String> meshes, boolean smooth, boolean gui3d, int defaultKey, ImmutableMap<String, ResourceLocation> textures)
     {
         this.modelLocation = modelLocation;
         this.model = model;
@@ -104,7 +103,7 @@ public class ModelWrapper implements IRetexturableModel, IModelCustomData, IMode
             }
         }
         builder.put("missingno", missing);
-        return new BakedWrapper(model.getRoot(), new ModelStateComposition(state, new GenericState(null, 0, 0, 0, TRSRTransformation.identity())) , smooth, gui3d, format, meshes, builder.build());
+        return new BakedWrapper(model.getRoot(), state, smooth, gui3d, format, meshes, builder.build());
     }
 
     @Override
@@ -178,7 +177,7 @@ public class ModelWrapper implements IRetexturableModel, IModelCustomData, IMode
     {
         if (name.equals("main"))
         {
-            return Optional.<IClip>of(GenericClip.INSTANCE);
+            return Optional.<IClip>of(Clip.INSTANCE);
         }
         return Optional.absent();
     }
@@ -186,7 +185,7 @@ public class ModelWrapper implements IRetexturableModel, IModelCustomData, IMode
     @Override
     public IModelState getDefaultState()
     {
-        return new GenericState(model.getRoot().getAnimation(), defaultKey, defaultKey, 0);
+        return null;
     }
 
     @Override

@@ -69,9 +69,9 @@ public class Parser
         }
     }
 
-    private GenericModel res;
+    private Model res;
 
-    public GenericModel parse() throws IOException
+    public Model parse() throws IOException
     {
         if(res != null) return res;
         dump = "\n";
@@ -167,7 +167,7 @@ public class Parser
         buf.limit(limitStack.pop());
     }
 
-    private GenericModel bb3d() throws IOException
+    private Model bb3d() throws IOException
     {
         chunk("BB3D");
         int version = buf.getInt();
@@ -189,7 +189,7 @@ public class Parser
         }
         dump("}");
         popLimit();
-        return new GenericModel(textures, brushes, root, meshes.build());
+        return new Model(textures, brushes, root, meshes.build());
     }
 
     private List<Texture> texs() throws IOException

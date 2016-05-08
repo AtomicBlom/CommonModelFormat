@@ -29,7 +29,7 @@ public enum B3DLoader implements ICustomModelLoader
     private IResourceManager manager;
 
     private final Set<String> enabledDomains = new HashSet<String>();
-    private final Map<ResourceLocation, GenericModel> cache = new HashMap<ResourceLocation, GenericModel>();
+    private final Map<ResourceLocation, Model> cache = new HashMap<ResourceLocation, Model>();
 
     public void addDomain(String domain)
     {
@@ -69,7 +69,7 @@ public enum B3DLoader implements ICustomModelLoader
                     else throw e;
                 }
                 Parser parser = new Parser(resource.getInputStream());
-                GenericModel model = parser.parse();
+                Model model = parser.parse();
                 cache.put(file, model);
             }
             catch(IOException e)
@@ -78,7 +78,7 @@ public enum B3DLoader implements ICustomModelLoader
                 throw e;
             }
         }
-        GenericModel model = cache.get(file);
+        Model model = cache.get(file);
         if(model == null) throw new ModelLoaderRegistry.LoaderException("Error loading cmf previously: " + file);
         if(!(model.getRoot().getKind() instanceof Mesh))
         {

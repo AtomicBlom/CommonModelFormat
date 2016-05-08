@@ -145,7 +145,6 @@ public class Parser {
                     node = Node.create(name, trsr, childNodes, new Pivot());
                 }
             } else {
-                //List<Node<?>> childMeshes = Lists.newArrayList();
                 int itemIndex = 0;
                 for (final Mesh mesh : mesh1)
                 {
@@ -217,17 +216,28 @@ public class Parser {
 
         final Set<Integer> mappedVertices = Sets.newHashSet();
 
+        Map<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>>> listToBuild = Maps.newHashMap();
+
         for (final OgexIndexArray indexArray : mesh.getIndexArrays())
         {
-            final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = ImmutableMultimap.builder();
-            final List<Face> faces = Lists.newArrayList();
+            //final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = ImmutableMultimap.builder();
+            //final List<Face> faces = Lists.newArrayList();
 
             int material = (int) indexArray.getMaterial();
             if (material >= brushList.size()) {
                 material = brushList.size() - 1;
-                Logger.warn("Attempt to get a material past the index limits.");
+                Logger.warn("Model has been exported with multiple Material IDs, but not enough have been defined in the export.");
             }
+
             final Brush brush = brushList.get(material);
+
+            if (!listToBuild.containsKey(brush)) {
+                listToBuild.put(brush,
+                        Pair.of(Lists.<Face>newArrayList(), ImmutableMultimap.<Vertex, Pair<Float,OgexBoneNode>>builder()));
+            }
+            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>> arrayListBuilderPair = listToBuild.get(brush);
+            final List<Face> faces = arrayListBuilderPair.getLeft();
+            final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
 
             for (final long[] polyGroup : (long[][]) indexArray.getArray())
             {
@@ -262,7 +272,6 @@ public class Parser {
                     }
 
                     final Vector3f position = new Vector3f();
-
                     final Vector4f colour = new Vector4f();
 
                     position.x = positionArray[0];
@@ -334,6 +343,20 @@ public class Parser {
                 faces.add(face);
             }
             //fixme: merge multiple instances of the same bruch to multiple faces.
+            /*final Mesh mesh1 = new Mesh(Pair.of(brush, faces));
+
+            meshBoneMapQueue.add(Pair.of(mesh1, boneWeightMapBuilder.build()));
+
+            meshes.add(mesh1);*/
+        }
+
+        for (final Map.Entry<Brush, Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>>> brushPairEntry : listToBuild.entrySet())
+        {
+            Brush brush = brushPairEntry.getKey();
+            final Pair<ArrayList<Face>, ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>>> arrayListBuilderPair = brushPairEntry.getValue();
+            final List<Face> faces = arrayListBuilderPair.getLeft();
+            final ImmutableMultimap.Builder<Vertex, Pair<Float, OgexBoneNode>> boneWeightMapBuilder = arrayListBuilderPair.getRight();
+
             final Mesh mesh1 = new Mesh(Pair.of(brush, faces));
 
             meshBoneMapQueue.add(Pair.of(mesh1, boneWeightMapBuilder.build()));

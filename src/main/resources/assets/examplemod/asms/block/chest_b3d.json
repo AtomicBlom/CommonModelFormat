@@ -1,9 +1,10 @@
 {
   "parameters": {
-    "end_anim": [ "compose", [ "+", 1 ] , "#click_time" ],
+    "length": 1,
+    "end_anim": [ "compose", [ "+", "#length" ] , "#click_time" ],
     "trigger_anim": [ "-", "#end_anim" ],
-    "progress": [ "-", "#click_time" ],
-    "speed": 1
+    "progress": [ "-/", "#click_time", "#length" ],
+    "speed": 10
   },
   "clips": {
     "model": "examplemod:block/chest.ogex@main",

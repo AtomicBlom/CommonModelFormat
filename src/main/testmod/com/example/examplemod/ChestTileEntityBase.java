@@ -21,9 +21,9 @@ public abstract class ChestTileEntityBase extends TileEntity
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
     private final TimeValues.VariableValue clickTime = new TimeValues.VariableValue(Float.NEGATIVE_INFINITY);
 
-    public ChestTileEntityBase()
+    public ChestTileEntityBase(String asmName)
     {
-        asm = proxy.load(new ResourceLocation(MODID.toLowerCase(), "asms/block/chest.json"), ImmutableMap.<String, ITimeValue>of(
+        asm = proxy.load(new ResourceLocation(MODID.toLowerCase(), "asms/block/" + asmName + ".json"), ImmutableMap.<String, ITimeValue>of(
             "click_time", clickTime
         ));
     }

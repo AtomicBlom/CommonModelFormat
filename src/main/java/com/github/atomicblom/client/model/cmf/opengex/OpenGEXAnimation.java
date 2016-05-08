@@ -2,6 +2,7 @@ package com.github.atomicblom.client.model.cmf.opengex;
 
 import com.github.atomicblom.client.model.cmf.common.IAnimation;
 import com.github.atomicblom.client.model.cmf.common.Node;
+import com.github.atomicblom.client.model.cmf.common.NodeClip;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
 import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.common.model.TRSRTransformation;
@@ -44,6 +45,10 @@ class OpenGEXAnimation implements IAnimation
     public TRSRTransformation apply(float time, Node<?> node)
     {
         TRSRTransformation ret = TRSRTransformation.identity();
+        if(node.getParent() != null)
+        {
+            ret = ret.compose(NodeClip.getTransform(time, node.getParent()));
+        }
         for(OgexTransform transform : transforms.keySet())
         {
             if(tracks.containsKey(transform))

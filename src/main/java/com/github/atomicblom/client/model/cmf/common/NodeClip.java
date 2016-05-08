@@ -3,7 +3,7 @@ package com.github.atomicblom.client.model.cmf.common;
 import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.common.model.animation.IJointClip;
 
-class NodeClip implements IJointClip
+public class NodeClip implements IJointClip
 {
     private final Node<?> node;
 
@@ -12,14 +12,28 @@ class NodeClip implements IJointClip
         this.node = node;
     }
 
+    // model-local, so need to walk the tree if the animation is null
     @Override
     public TRSRTransformation apply(float time)
     {
-        TRSRTransformation ret = TRSRTransformation.identity();
-        if (node.getAnimation() == null)
+        return getTransform(time, node);
+    }
+
+    public static TRSRTransformation getTransform(float time, Node<?> node)
+    {
+        if(node.getAnimation() == null)
         {
-            return ret.compose(node.getTransformation());
+            TRSRTransformation ret = TRSRTransformation.identity();
+            if(node.getParent() != null)
+            {
+                //ret = ret.compose(getTransform(time, node.getParent()));
+            }
+            ret = ret.compose(node.getTransformation());
+            return ret;
         }
-        return node.getAnimation().apply(time, node);
+        else
+        {
+            return node.getAnimation().apply(time, node);
+        }
     }
 }

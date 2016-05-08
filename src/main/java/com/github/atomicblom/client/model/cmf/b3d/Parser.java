@@ -189,7 +189,7 @@ public class Parser
         }
         dump("}");
         popLimit();
-        return new Model(textures, brushes, root, meshes.build());
+        return new Model(textures, brushes, root);
     }
 
     private List<Texture> texs() throws IOException

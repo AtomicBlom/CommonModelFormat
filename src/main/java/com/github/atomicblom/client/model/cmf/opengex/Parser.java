@@ -28,7 +28,6 @@ class Parser {
     private static final Logger Logger = LogManager.getLogger();
 
     private final InputStream inputStream;
-    private Axis up = Axis.Y;
     private final Matrix4f upMatrix = new Matrix4f();
     private final Matrix4f upMatrixInverted = new Matrix4f();
 
@@ -48,7 +47,7 @@ class Parser {
         final OgexParser ogexParser = new OgexParser();
         final Reader reader = new InputStreamReader(inputStream);
         final OgexScene ogexScene = ogexParser.parseScene(reader);
-        up = ogexScene.getMetrics().getUp();
+        final Axis up = ogexScene.getMetrics().getUp();
         upMatrix.set(getMatrixForUpAxis(up));
         upMatrixInverted.set(upMatrix);
         upMatrixInverted.invert();
@@ -59,7 +58,7 @@ class Parser {
         processMeshBoneMapQueue();
 
         //Meshes is not currently used.
-        Model model = new Model(textures, brushes.values(), rootNode, null);
+        Model model = new Model(textures, brushes.values(), rootNode);
         return model;
     }
 
@@ -110,14 +109,11 @@ class Parser {
             }
             mesh.setBones(bonesUsed);
             mesh.setWeightMap(boneWeightMapBuilder.build());
-
         }
     }
 
     @SuppressWarnings("ChainOfInstanceofChecks")
     private Node<?> createNode(OpenGEXNode openGEXNode) {
-        final Node<?> node;
-
         if (openGEXNode instanceof OgexCameraNode) {
             return null;
         }
@@ -132,6 +128,7 @@ class Parser {
                 childNodes.add(childNode);
             }
         }
+
         TRSRTransformation trsr = TRSRTransformation.identity();
         String name = "";
         IAnimation animation = null;
@@ -147,6 +144,7 @@ class Parser {
             }
         }
 
+        final Node<?> node;
         if (openGEXNode instanceof OgexGeometryNode) {
             final OgexGeometryNode ogexGeometryNode = (OgexGeometryNode) openGEXNode;
             final List<Mesh> createdMeshes = createMeshes(ogexGeometryNode);
@@ -165,8 +163,6 @@ class Parser {
 
                 node = Node.create(name, trsr, childNodes, new Pivot());
             }
-
-
         } else
         {
             if (openGEXNode instanceof OgexBoneNode)

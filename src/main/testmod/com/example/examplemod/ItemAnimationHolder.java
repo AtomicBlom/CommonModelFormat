@@ -17,7 +17,7 @@ public class ItemAnimationHolder implements ICapabilityProvider
 {
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
 
-    private final IAnimationStateMachine asm = ExampleMod.proxy.load(new ResourceLocation(ExampleMod.MODID.toLowerCase(), "asms/block/engine.json"), ImmutableMap.<String, ITimeValue>of(
+    private final IAnimationStateMachine asm = ExampleMod.proxy.load(new ResourceLocation(ExampleMod.MODID.toLowerCase(), "asms/block/chest.json"), ImmutableMap.<String, ITimeValue>of(
             "cycle_length", cycleLength
     ));
 

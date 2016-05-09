@@ -5,9 +5,7 @@ import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
@@ -27,13 +25,16 @@ import net.minecraftforge.common.property.IExtendedBlockState;
 import net.minecraftforge.common.property.Properties;
 import org.apache.commons.lang3.tuple.Pair;
 import javax.vecmath.Matrix4f;
+import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
+import javax.vecmath.Vector4f;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class BakedWrapper implements IPerspectiveAwareModel
 {
+
     private final Node<?> node;
     private final IModelState state;
     private final boolean smooth;
@@ -96,54 +97,85 @@ public class BakedWrapper implements IPerspectiveAwareModel
         {
             generateQuads(builder, child, state);
         }
-        if (node.getKind() instanceof Mesh && meshes.contains(node.getName()))
+        boolean boneDebugging = true;
+
+        if (node.getKind() instanceof Bone && boneDebugging) {
+            final Brush white = new Brush("White", new Vector4f(1, 1, 1, 1), 1, 1, 0, Lists.newArrayList(new Texture("minecraft/White", 0, 0, new Vector2f(0, 0), new Vector2f(1, 1), 0)));
+
+            //Matrix4f nodeMatrix = node.getTransformation().getMatrix();
+            final Vector3f v1Vector = new Vector3f(0, 0, 0);
+            //nodeMatrix.transform(v1Vector);
+            final Vertex v1 = new Vertex(v1Vector, null, new Vector4f(1, 1, 1, 1), new Vector4f[] {new Vector4f(0, 0, 0, 0)});
+            final Vector3f v2Vector = new Vector3f(0.5f, 0, 1);
+            //nodeMatrix.transform(v2Vector);
+            final Vertex v2 = new Vertex(v2Vector, null, new Vector4f(1, 1, 1, 1), new Vector4f[] {new Vector4f(0.5f, 0, 1, 0)});
+            final Vector3f v3Vector = new Vector3f(1, 0, 0);
+            //nodeMatrix.transform(v3Vector);
+            final Vertex v3 = new Vertex(v3Vector, null, new Vector4f(1, 1, 1, 1), new Vector4f[] {new Vector4f(1, 0, 0, 0)});
+
+            Mesh mesh = new Mesh(white, Lists.newArrayList(new Face(v1, v2, v3, white)));
+
+            final ImmutableMultimap.Builder<Vertex, BoneWeight> builder1 = ImmutableMultimap.builder();
+            builder1.put(v1, new BoneWeight((Node<Bone>)node, 1f));
+            builder1.put(v2, new BoneWeight((Node<Bone>)node, 1f));
+            builder1.put(v3, new BoneWeight((Node<Bone>)node, 1f));
+            mesh.setWeightMap(builder1.build());
+            mesh.setBones(Sets.newHashSet((Node<Bone>)node));
+            buildMesh(builder, state, mesh);
+        }
+
+        if (!boneDebugging && node.getKind() instanceof Mesh && meshes.contains(node.getName()))
         // show all meshes, helpful for debugging
         //if (node.getKind() instanceof Mesh)
         {
             Mesh mesh = (Mesh) node.getKind();
-            Collection<Face> faces = mesh.bake(new Function<Node<?>, Matrix4f>()
-            {
-                private final TRSRTransformation global = state.apply(Optional.<IModelPart>absent()).or(TRSRTransformation.identity());
-                private final LoadingCache<Node<?>, TRSRTransformation> localCache = CacheBuilder.newBuilder()
-                        .maximumSize(32)
-                        .build(new CacheLoader<Node<?>, TRSRTransformation>()
-                        {
-                            @Override
-                            public TRSRTransformation load(Node<?> node) throws Exception
-                            {
-                                return state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());
-                            }
-                        });
+            buildMesh(builder, state, mesh);
+        }
+    }
 
-                @Override
-                public Matrix4f apply(Node<?> node)
+    private void buildMesh(ImmutableList.Builder<BakedQuad> builder, final IModelState state, Mesh mesh)
+    {Collection<Face> faces = mesh.bake(new Function<Node<?>, Matrix4f>()
+    {
+        private final TRSRTransformation global = state.apply(Optional.<IModelPart>absent()).or(TRSRTransformation.identity());
+        private final LoadingCache<Node<?>, TRSRTransformation> localCache = CacheBuilder.newBuilder()
+                .maximumSize(32)
+                .build(new CacheLoader<Node<?>, TRSRTransformation>()
                 {
-                    final TRSRTransformation unchecked = state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());//localCache.getUnchecked(node);
-                    return global.compose(unchecked).getMatrix();
-                }
-            });
-            for (Face f : faces)
+                    @Override
+                    public TRSRTransformation load(Node<?> node) throws Exception
+                    {
+                        return state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());
+                    }
+                });
+
+        @Override
+        public Matrix4f apply(Node<?> node)
+        {
+            final TRSRTransformation unchecked = state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());//localCache.getUnchecked(node);
+            return global.compose(unchecked).getMatrix();
+        }
+    });
+        for (Face f : faces)
+        {
+            UnpackedBakedQuad.Builder quadBuilder = new UnpackedBakedQuad.Builder(format);
+            quadBuilder.setQuadOrientation(EnumFacing.getFacingFromVector(f.getNormal().x, f.getNormal().y, f.getNormal().z));
+            List<Texture> textures = null;
+            if (f.getBrush() != null) textures = f.getBrush().getTextures();
+            TextureAtlasSprite sprite;
+            if (textures == null || textures.isEmpty()) sprite = this.textures.get("missingno");
+            else if (textures.get(0) == Texture.White) sprite = ModelLoader.White.INSTANCE;
+            else sprite = this.textures.get(textures.get(0).getPath());
+            quadBuilder.setTexture(sprite);
+            putVertexData(quadBuilder, f.getV1(), f.getNormal(), sprite);
+            putVertexData(quadBuilder, f.getV2(), f.getNormal(), sprite);
+            putVertexData(quadBuilder, f.getV3(), f.getNormal(), sprite);
+            if (f.getVertexCount() == 3)
             {
-                UnpackedBakedQuad.Builder quadBuilder = new UnpackedBakedQuad.Builder(format);
-                quadBuilder.setQuadOrientation(EnumFacing.getFacingFromVector(f.getNormal().x, f.getNormal().y, f.getNormal().z));
-                List<Texture> textures = null;
-                if (f.getBrush() != null) textures = f.getBrush().getTextures();
-                TextureAtlasSprite sprite;
-                if (textures == null || textures.isEmpty()) sprite = this.textures.get("missingno");
-                else if (textures.get(0) == Texture.White) sprite = ModelLoader.White.INSTANCE;
-                else sprite = this.textures.get(textures.get(0).getPath());
-                quadBuilder.setTexture(sprite);
-                putVertexData(quadBuilder, f.getV1(), f.getNormal(), sprite);
-                putVertexData(quadBuilder, f.getV2(), f.getNormal(), sprite);
                 putVertexData(quadBuilder, f.getV3(), f.getNormal(), sprite);
-                if (f.getVertexCount() == 3)
-                {
-                    putVertexData(quadBuilder, f.getV3(), f.getNormal(), sprite);
-                } else {
-                    putVertexData(quadBuilder, f.getV4(), f.getNormal(), sprite);
-                }
-                builder.add(quadBuilder.build());
+            } else {
+                putVertexData(quadBuilder, f.getV4(), f.getNormal(), sprite);
             }
+            builder.add(quadBuilder.build());
         }
     }
 

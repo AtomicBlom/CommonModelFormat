@@ -4,6 +4,7 @@
     "end_anim": [ "compose", [ "+", "#length" ] , "#click_time" ],
     "trigger_anim": [ "-", "#end_anim" ],
     "progress": [ "-/", "#click_time", "#length" ],
+    //"progress": 0.5,
     "speed": 1
   },
   "clips": {

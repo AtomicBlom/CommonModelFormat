@@ -48,6 +48,7 @@ class OpenGEXAnimation implements IAnimation
         if(node.getParent() != null)
         {
             ret = ret.compose(NodeClip.getTransform(time, node.getParent()));
+            //ret = ret.compose(applyTrack(node.getParent(), time)
         }
         for(OgexTransform transform : transforms.keySet())
         {

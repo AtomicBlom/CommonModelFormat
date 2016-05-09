@@ -165,6 +165,10 @@ public class BakedWrapper implements IPerspectiveAwareModel
             if (textures == null || textures.isEmpty()) sprite = this.textures.get("missingno");
             else if (textures.get(0) == Texture.White) sprite = ModelLoader.White.INSTANCE;
             else sprite = this.textures.get(textures.get(0).getPath());
+            if (sprite == null) {
+                sprite = ModelLoader.White.INSTANCE;
+            }
+
             quadBuilder.setTexture(sprite);
             putVertexData(quadBuilder, f.getV1(), f.getNormal(), sprite);
             putVertexData(quadBuilder, f.getV2(), f.getNormal(), sprite);

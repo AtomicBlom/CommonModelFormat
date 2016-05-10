@@ -24,13 +24,10 @@ import net.minecraftforge.common.model.TRSRTransformation;
 import net.minecraftforge.common.property.IExtendedBlockState;
 import net.minecraftforge.common.property.Properties;
 import org.apache.commons.lang3.tuple.Pair;
-import javax.vecmath.Matrix4f;
-import javax.vecmath.Vector2f;
-import javax.vecmath.Vector3f;
-import javax.vecmath.Vector4f;
+
+import javax.vecmath.*;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class BakedWrapper implements IPerspectiveAwareModel
 {
@@ -91,6 +88,8 @@ public class BakedWrapper implements IPerspectiveAwareModel
         return quads;
     }
 
+    private static final Brush jointDebugBrush = new Brush("armature", new Vector4f(1, 1, 1, 1), 0, 1, 0, ImmutableList.of(Texture.White));
+
     private void generateQuads(ImmutableList.Builder<BakedQuad> builder, Node<?> node, final IModelState state)
     {
         for (Node<?> child : node.getNodes().values())
@@ -100,31 +99,36 @@ public class BakedWrapper implements IPerspectiveAwareModel
         boolean boneDebugging = true;
 
         if (node.getKind() instanceof Bone && boneDebugging) {
-            final Brush white = new Brush("White", new Vector4f(1, 1, 1, 1), 1, 1, 0, Lists.newArrayList(new Texture("minecraft/White", 0, 0, new Vector2f(0, 0), new Vector2f(1, 1), 0)));
+            // pose from .getInvBindPose, red
+            TRSRTransformation pose = node.getInvBindPose().inverse();
+            ImmutableList<Face> staticFaces = buildJointFaces(jointDebugBrush, pose, 1, 0, 0, null, null);
+            ImmutableList<Face> staticBoneFaces = buildBoneFaces(jointDebugBrush, node, 1, 0, 0, null);
+            // pose from forward hierarchy, blue
+            TRSRTransformation forwardPose = TRSRTransformation.identity();
+            Node<?> parentNode = node;
+            while(parentNode != null)
+            {
+                forwardPose = parentNode.getTransformation().compose(forwardPose);
+                parentNode = parentNode.getParent();
+            }
+            ImmutableList<Face> staticFaces2 = buildJointFaces(jointDebugBrush, forwardPose, 0, 0, 1, null, null);
 
-            //Matrix4f nodeMatrix = node.getTransformation().getMatrix();
-            final Vector3f v1Vector = new Vector3f(0, 0, 0);
-            //nodeMatrix.transform(v1Vector);
-            final Vertex v1 = new Vertex(v1Vector, null, new Vector4f(1, 1, 1, 1), new Vector4f[] {new Vector4f(0, 0, 0, 0)});
-            final Vector3f v2Vector = new Vector3f(0.5f, 0, 1);
-            //nodeMatrix.transform(v2Vector);
-            final Vertex v2 = new Vertex(v2Vector, null, new Vector4f(1, 1, 1, 1), new Vector4f[] {new Vector4f(0.5f, 0, 1, 0)});
-            final Vector3f v3Vector = new Vector3f(1, 0, 0);
-            //nodeMatrix.transform(v3Vector);
-            final Vertex v3 = new Vertex(v3Vector, null, new Vector4f(1, 1, 1, 1), new Vector4f[] {new Vector4f(1, 0, 0, 0)});
+            // deformable joints, green
+            ImmutableMultimap.Builder<Vertex, BoneWeight> weightBuilder = ImmutableMultimap.builder();
+            BoneWeight bw = new BoneWeight((Node<Bone>) node, 1f);
 
-            Mesh mesh = new Mesh(white, Lists.newArrayList(new Face(v1, v2, v3, white)));
+            ImmutableList<Face> dynamicFaces = buildJointFaces(jointDebugBrush, pose, 0, 1, 0, weightBuilder, bw);
+            ImmutableList<Face> dynamicBoneFaces = buildBoneFaces(jointDebugBrush, node, 0, 1, 0, weightBuilder);
 
-            final ImmutableMultimap.Builder<Vertex, BoneWeight> builder1 = ImmutableMultimap.builder();
-            builder1.put(v1, new BoneWeight((Node<Bone>)node, 1f));
-            builder1.put(v2, new BoneWeight((Node<Bone>)node, 1f));
-            builder1.put(v3, new BoneWeight((Node<Bone>)node, 1f));
-            mesh.setWeightMap(builder1.build());
-            mesh.setBones(Sets.newHashSet((Node<Bone>)node));
+            Mesh mesh = new Mesh(jointDebugBrush, ImmutableList.copyOf(Iterables.concat(staticFaces, staticBoneFaces, staticFaces2, dynamicFaces, dynamicBoneFaces)));
+            // setting dummy mesh node
+            Node.create("DummyBoneMeshNode", TRSRTransformation.identity(), ImmutableList.<Node<?>>of(), mesh);
+            mesh.setWeightMap(weightBuilder.build());
+            mesh.setBones(ImmutableSet.of((Node<Bone>) node));
             buildMesh(builder, state, mesh);
         }
 
-        if (!boneDebugging && node.getKind() instanceof Mesh && meshes.contains(node.getName()))
+        if (node.getKind() instanceof Mesh && meshes.contains(node.getName()))
         // show all meshes, helpful for debugging
         //if (node.getKind() instanceof Mesh)
         {
@@ -133,28 +137,118 @@ public class BakedWrapper implements IPerspectiveAwareModel
         }
     }
 
-    private void buildMesh(ImmutableList.Builder<BakedQuad> builder, final IModelState state, Mesh mesh)
-    {Collection<Face> faces = mesh.bake(new Function<Node<?>, Matrix4f>()
+    private Face makeOctahedronFace(Brush brush, Matrix4f pose, int i, float r, float g, float b)
     {
-        private final TRSRTransformation global = state.apply(Optional.<IModelPart>absent()).or(TRSRTransformation.identity());
-        private final LoadingCache<Node<?>, TRSRTransformation> localCache = CacheBuilder.newBuilder()
-                .maximumSize(32)
-                .build(new CacheLoader<Node<?>, TRSRTransformation>()
-                {
-                    @Override
-                    public TRSRTransformation load(Node<?> node) throws Exception
-                    {
-                        return state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());
-                    }
-                });
-
-        @Override
-        public Matrix4f apply(Node<?> node)
+        int x = i & 1;
+        int y = (i >> 1) & 1;
+        int z = (i >> 2) & 1;
+        Vector4f p = new Vector4f();
+        p.set(x * 2 - 1, 0, 0, 1);
+        pose.transform(p);
+        Vertex v0 = new Vertex(new Vector3f(p.x / p.w, p.y / p.w, p.z / p.w), null, new Vector4f(r, g, b, 1), new Vector4f[]{new Vector4f(.5f, .5f, 0, 1)});
+        p.set(0, y * 2 - 1, 0, 1);
+        pose.transform(p);
+        Vertex v1 = new Vertex(new Vector3f(p.x / p.w, p.y / p.w, p.z / p.w), null, new Vector4f(r, g, b, 1), new Vector4f[]{new Vector4f(.5f, .5f, 0, 1)});
+        p.set(0, 0, z * 2 - 1, 1);
+        pose.transform(p);
+        Vertex v2 = new Vertex(new Vector3f(p.x / p.w, p.y / p.w, p.z / p.w), null, new Vector4f(r, g, b, 1), new Vector4f[]{new Vector4f(.5f, .5f, 0, 1)});
+        if((x ^ y ^ z) == 1)
         {
-            final TRSRTransformation unchecked = state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());//localCache.getUnchecked(node);
-            return global.compose(unchecked).getMatrix();
+            return new Face(v0, v1, v2, brush);
         }
-    });
+        else
+        {
+            return new Face(v2, v1, v0, brush);
+        }
+
+    }
+
+    private ImmutableList<Face> buildJointFaces(Brush brush, TRSRTransformation pose, float r, float g, float b, ImmutableMultimap.Builder<Vertex, BoneWeight> weightBuilder, BoneWeight bw)
+    {
+        ImmutableList.Builder<Face> faceBuilder = ImmutableList.builder();
+        Matrix4f pm = pose.compose(new TRSRTransformation(null, null, new Vector3f(.1f, .1f, .1f), null)).getMatrix();
+        for(int i = 0; i < 8; i++)
+        {
+            Face face = makeOctahedronFace(brush, pm, i, r, g, b);
+            faceBuilder.add(face);
+            if(weightBuilder != null)
+            {
+                weightBuilder.put(face.getV1(), bw);
+                weightBuilder.put(face.getV2(), bw);
+                weightBuilder.put(face.getV3(), bw);
+            }
+        }
+        return faceBuilder.build();
+    }
+
+    private ImmutableList<Face> buildBoneFaces(Brush brush, Node<?> node, float r, float g, float b, ImmutableMultimap.Builder<Vertex, BoneWeight> weightBuilder)
+    {
+        if(!(node.getParent().getKind() instanceof Bone))
+        {
+            return ImmutableList.of();
+        }
+        TRSRTransformation poseStart = node.getParent().getInvBindPose().inverse();
+        ImmutableList.Builder<Face> faceBuilder = ImmutableList.builder();
+        Vector3f from = new Vector3f(0, 1, 0), to = new Vector3f(), axis = new Vector3f();
+        Vector4f t = new Vector4f(0, 0, 0, 1);
+        poseStart.inverse().compose(node.getInvBindPose().inverse()).getMatrix().transform(t);
+        to.set(t.x / t.w, t.y / t.w, t.z / t.w);
+        if(to.length() < 1e-4)
+        {
+            // bone too short
+            return ImmutableList.of();
+        }
+        float scale = to.length();
+        to.normalize();
+        axis.cross(from, to);
+        float angle = (float)Math.acos(from.dot(to));
+        Quat4f rot = new Quat4f();
+        rot.set(new AxisAngle4f(axis, angle));
+        TRSRTransformation local = new TRSRTransformation(null, rot, new Vector3f(scale, scale, scale), null);
+        Matrix4f global = poseStart.compose(local).compose(new TRSRTransformation(new Vector3f(0, .5f, 0), null, new Vector3f(.1f, .5f, .1f), null)).getMatrix();
+        BoneWeight bs = new BoneWeight((Node<Bone>)(node.getParent()), 1f);
+        BoneWeight bsm = new BoneWeight((Node<Bone>)(node.getParent()), .5f);
+        BoneWeight bem = new BoneWeight((Node<Bone>)node, .5f);
+        BoneWeight be = new BoneWeight((Node<Bone>)node, 1f);
+        for(int i = 0; i < 8; i++)
+        {
+            Face face = makeOctahedronFace(brush, global, i, r, g, b);
+            faceBuilder.add(face);
+            if(weightBuilder != null)
+            {
+                weightBuilder.put(face.getV1(), bsm);
+                weightBuilder.put(face.getV1(), bem);
+                weightBuilder.put(face.getV3(), bsm);
+                weightBuilder.put(face.getV3(), bem);
+                weightBuilder.put(face.getV2(), (i & 2) == 0 ? bs : be);
+            }
+        }
+        return faceBuilder.build();
+    }
+
+    private void buildMesh(ImmutableList.Builder<BakedQuad> builder, final IModelState state, Mesh mesh)
+    {
+        Collection<Face> faces = mesh.bake(new Function<Node<?>, Matrix4f>()
+        {
+            private final TRSRTransformation global = state.apply(Optional.<IModelPart>absent()).or(TRSRTransformation.identity());
+            private final LoadingCache<Node<?>, TRSRTransformation> localCache = CacheBuilder.newBuilder()
+                    .maximumSize(32)
+                    .build(new CacheLoader<Node<?>, TRSRTransformation>()
+                    {
+                        @Override
+                        public TRSRTransformation load(Node<?> node) throws Exception
+                        {
+                            return state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());
+                        }
+                    });
+
+            @Override
+            public Matrix4f apply(Node<?> node)
+            {
+                final TRSRTransformation unchecked = state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());//localCache.getUnchecked(node);
+                return global.compose(unchecked).getMatrix();
+            }
+        });
         for (Face f : faces)
         {
             UnpackedBakedQuad.Builder quadBuilder = new UnpackedBakedQuad.Builder(format);

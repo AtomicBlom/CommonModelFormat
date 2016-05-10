@@ -10,6 +10,7 @@ import com.google.common.collect.Table.Cell;
 import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.lang3.tuple.Triple;
 
+import javax.vecmath.Matrix4f;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -97,5 +98,27 @@ public class Node<K extends IKind<K>> {
     public TRSRTransformation getTransformation()
     {
         return transformation;
+    }
+
+    public TRSRTransformation getInvBindPose()
+    {
+        if(kind instanceof Bone)
+        {
+            Bone bone = (Bone) kind;
+            if(bone.getInvBindPose() != null)
+            {
+                return bone.getInvBindPose();
+            }
+        }
+        Matrix4f m = transformation.getMatrix();
+        m.invert();
+        TRSRTransformation pose = new TRSRTransformation(m);
+
+        if (parent != null)
+        {
+            TRSRTransformation parentTr = parent.getInvBindPose();
+            pose = pose.compose(parentTr);
+        }
+        return pose;
     }
 }

@@ -1,9 +1,8 @@
 package com.github.atomicblom.client.model.cmf.opengex;
 
-import com.github.atomicblom.client.model.cmf.common.IAnimation;
-import com.github.atomicblom.client.model.cmf.common.Node;
-import com.github.atomicblom.client.model.cmf.common.NodeClip;
+import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.lang3.NotImplementedException;
@@ -14,6 +13,7 @@ class OpenGEXAnimation implements IAnimation
 {
     private final ImmutableMap<OgexTransform, OgexTrack> tracks;
     private final ImmutableMap<OgexTransform, TRSRTransformation> transforms;
+    private final ImmutableList<OgexTransform> transformKeys;
     private final Matrix4f upAxis;
     private final Matrix4f upAxisInverted;
 
@@ -38,6 +38,7 @@ class OpenGEXAnimation implements IAnimation
             transform.mul(upAxisInverted);
             mapBuilder.put(ogexTransform, new TRSRTransformation(transform));
         }
+        transformKeys = ImmutableList.copyOf(transforms);
         this.transforms = mapBuilder.build();
     }
 
@@ -45,12 +46,7 @@ class OpenGEXAnimation implements IAnimation
     public TRSRTransformation apply(float time, Node<?> node)
     {
         TRSRTransformation ret = TRSRTransformation.identity();
-        if(node.getParent() != null)
-        {
-            ret = ret.compose(NodeClip.getTransform(time, node.getParent()));
-            //ret = ret.compose(applyTrack(node.getParent(), time)
-        }
-        for(OgexTransform transform : transforms.keySet())
+        for(OgexTransform transform : transformKeys)
         {
             if(tracks.containsKey(transform))
             {

@@ -7,5 +7,6 @@ import net.minecraftforge.common.model.TRSRTransformation;
  */
 public interface IAnimation
 {
+    // node-local
     TRSRTransformation apply(float time, Node<?> node);
 }

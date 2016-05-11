@@ -13,5 +13,7 @@ public class Resources {
     public static class OgexBlocks {
         public static final String blockChestName = "blockogexchest";
         public static ResourceLocation blockChestId = new ResourceLocation(MODID, blockChestName);
+        public static final String blockFanName = "blockogexfan";
+        public static ResourceLocation blockFanId = new ResourceLocation(MODID, blockFanName);
     }
 }

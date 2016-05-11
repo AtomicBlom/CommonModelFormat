@@ -4,6 +4,8 @@ import com.example.examplemod.B3D.B3DChestBlock;
 import com.example.examplemod.B3D.B3DChestTileEntity;
 import com.example.examplemod.ogex.OgexChestBlock;
 import com.example.examplemod.ogex.OgexChestTileEntity;
+import com.example.examplemod.ogex.OgexFanBlock;
+import com.example.examplemod.ogex.OgexFanTileEntity;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemBlock;
@@ -41,6 +43,17 @@ public abstract class CommonProxy
             }
         }.setRegistryName(Resources.OgexBlocks.blockChestId));
         GameRegistry.registerTileEntity(OgexChestTileEntity.class, ExampleMod.MODID + ":" + "tile_" + Resources.OgexBlocks.blockChestName);
+
+        GameRegistry.register(new OgexFanBlock());
+        GameRegistry.register(new ItemBlock(Block.REGISTRY.getObject(Resources.OgexBlocks.blockFanId))
+        {
+            @Override
+            public ICapabilityProvider initCapabilities(ItemStack stack, NBTTagCompound nbt)
+            {
+                return new ItemAnimationHolder();
+            }
+        }.setRegistryName(Resources.OgexBlocks.blockFanId));
+        GameRegistry.registerTileEntity(OgexFanTileEntity.class, ExampleMod.MODID + ":" + "tile_" + Resources.OgexBlocks.blockFanName);
     }
 
     public abstract IAnimationStateMachine load(ResourceLocation location, ImmutableMap<String, ITimeValue> parameters);

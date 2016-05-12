@@ -8,6 +8,9 @@ import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.lang3.NotImplementedException;
 import javax.vecmath.AxisAngle4f;
 import javax.vecmath.Matrix4f;
+import javax.vecmath.Vector3f;
+
+import static com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.Kind.X;
 
 class OpenGEXAnimation implements IAnimation
 {
@@ -89,6 +92,31 @@ class OpenGEXAnimation implements IAnimation
                     throw new IllegalStateException("ComponentRotation has kind" + rot.getKind());
             }
             transform.set(aa);
+        } else if (target instanceof OgexTranslation.ComponentTranslation)
+        {
+            OgexTranslation.ComponentTranslation translation = (OgexTranslation.ComponentTranslation) target;
+            Vector3f actionToPerform = new Vector3f();
+            switch (translation.getKind())
+            {
+                case X:
+                    actionToPerform.x = value[0];
+                    break;
+                case Y:
+                    actionToPerform.y = value[0];
+                    break;
+                case Z:
+                    actionToPerform.z = value[0];
+                    break;
+                default:
+                    throw new IllegalStateException("ComponentRotation has kind" + translation.getKind());
+            }
+            transform.set(actionToPerform);
+        } else if (target instanceof OgexTranslation.XyzTranslation) {
+            Vector3f actionToPerform = new Vector3f();
+            actionToPerform.x = value[0];
+            actionToPerform.y = value[1];
+            actionToPerform.z = value[2];
+            transform.set(actionToPerform);
         } else
         {
             throw new NotImplementedException("Only Matrix Transform or simple rotation for now");

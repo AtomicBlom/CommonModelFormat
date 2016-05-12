@@ -3,6 +3,7 @@ package com.example.examplemod;
 import com.example.examplemod.B3D.B3DChestTileEntity;
 import com.example.examplemod.ogex.OgexChestTileEntity;
 import com.example.examplemod.ogex.OgexFanTileEntity;
+import com.example.examplemod.ogex.OgexSpiderTileEntity;
 import com.github.atomicblom.client.model.cmf.b3d.B3DLoader;
 import com.github.atomicblom.client.model.cmf.opengex.OpenGEXLoader;
 import com.google.common.collect.ImmutableMap;
@@ -40,6 +41,10 @@ public class ClientProxy extends CommonProxy
                 Item.REGISTRY.getObject(Resources.OgexBlocks.blockFanId), 0,
                 new ModelResourceLocation(Resources.OgexBlocks.blockFanId, "inventory"));
 
+        ModelLoader.setCustomModelResourceLocation(
+                Item.REGISTRY.getObject(Resources.OgexBlocks.blockSpiderId), 0,
+                new ModelResourceLocation(Resources.OgexBlocks.blockSpiderId, "inventory"));
+
         ClientRegistry.bindTileEntitySpecialRenderer(B3DChestTileEntity.class, new AnimationTESR<B3DChestTileEntity>()
         {
             @Override
@@ -60,6 +65,14 @@ public class ClientProxy extends CommonProxy
         {
             @Override
             public void handleEvents(OgexFanTileEntity chest, float time, Iterable<Event> pastEvents) {
+                chest.handleEvents(time, pastEvents);
+            }
+        });
+
+        ClientRegistry.bindTileEntitySpecialRenderer(OgexSpiderTileEntity.class, new AnimationTESR<OgexSpiderTileEntity>()
+        {
+            @Override
+            public void handleEvents(OgexSpiderTileEntity chest, float time, Iterable<Event> pastEvents) {
                 chest.handleEvents(time, pastEvents);
             }
         });

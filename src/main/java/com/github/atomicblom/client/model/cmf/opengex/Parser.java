@@ -164,6 +164,11 @@ class Parser {
             objectTrsr = new TRSRTransformation(objectOnlyTransformations);
 
             name = ogexNode.getName();
+
+            if (name == null) {
+                name = UUID.randomUUID().toString();
+            }
+
             // FIXME more than 1 clip
             if(!ogexNode.getAnimations().isEmpty()) {
                 final OgexAnimation ogexAnimation = ogexNode.getAnimations().iterator().next();

@@ -1,6 +1,7 @@
 package com.github.atomicblom.client.model.cmf.common;
 
 import com.github.atomicblom.client.model.cmf.b3d.B3DAnimation;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -19,43 +20,47 @@ public class Node<K extends IKind<K>> {
     private final String name;
     private final TRSRTransformation transformation;
     private final ImmutableMap<String, Node<?>> nodes;
-    private IAnimation animation;
+    private IAnimation animation = null;
     private final K kind;
     private Node<? extends IKind<?>> parent;
 
-    public static <K extends IKind<K>> Node<K> create(String name, TRSRTransformation transformation, List<Node<?>> nodes, K kind) {
-        return new Node<K>(name, transformation, nodes, kind);
+    public static <K extends IKind<K>> Node<K> create(String name, TRSRTransformation transformation, List<Node<?>> nodes, K kind, Function<? super Node<?>, ? extends IAnimation> animFactory, boolean passAnimation) {
+        return new Node<K>(name, transformation, nodes, kind, animFactory, passAnimation);
     }
 
-    public Node(String name, TRSRTransformation transformation, List<Node<?>> nodes, K kind) {
+    public Node(String name, TRSRTransformation transformation, List<Node<?>> nodes, K kind, Function<? super Node<?>, ? extends IAnimation> animFactory, boolean passAnimation) {
         this.name = name;
         this.transformation = transformation;
         this.nodes = buildNodeMap(nodes);
         this.kind = kind;
+        if(animFactory != null)
+        {
+            IAnimation animation = animFactory.apply(this);
+            if(passAnimation)
+            {
+                setAnimation(animation);
+            }
+            else
+            {
+                this.animation = animation;
+            }
+        }
         kind.setParent(this);
         for (Node<?> child : this.nodes.values()) {
             child.setParent(this);
         }
     }
 
-    public void setAnimation(IAnimation animation) {
+    private void setAnimation(IAnimation animation)
+    {
         this.animation = animation;
-        Deque<Node<?>> q = new ArrayDeque<Node<?>>(nodes.values());
-
-        while (!q.isEmpty()) {
-            Node<?> node = q.pop();
-            if (node.getAnimation() != null) continue;
-            node.setAnimation(animation);
-            q.addAll(node.getNodes().values());
+        for(Node<?> child : nodes.values())
+        {
+            if(child.animation == null)
+            {
+                child.setAnimation(animation);
+            }
         }
-    }
-
-    public void setAnimation(Triple<Integer, Integer, Float> animData, Table<Integer, Optional<Node<?>>, Key> keyData) {
-        ImmutableTable.Builder<Integer, Node<?>, Key> builder = ImmutableTable.builder();
-        for (Cell<Integer, Optional<Node<?>>, Key> key : keyData.cellSet()) {
-            builder.put(key.getRowKey(), key.getColumnKey().or(this), key.getValue());
-        }
-        setAnimation(new B3DAnimation(animData.getLeft(), animData.getMiddle(), animData.getRight(), builder.build()));
     }
 
     private ImmutableMap<String, Node<?>> buildNodeMap(List<Node<?>> nodes) {
@@ -110,9 +115,7 @@ public class Node<K extends IKind<K>> {
                 return bone.getInvBindPose();
             }
         }
-        Matrix4f m = transformation.getMatrix();
-        m.invert();
-        TRSRTransformation pose = new TRSRTransformation(m);
+        TRSRTransformation pose = transformation.inverse();
 
         if (parent != null)
         {

@@ -7,6 +7,8 @@ import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexScale.ComponentSc
 import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexScale.XyzScale;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.ComponentTranslation;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.XyzTranslation;
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.collect.*;
 import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
@@ -39,7 +41,7 @@ class Parser {
     }
 
     private final Map<OgexMaterial, Brush> brushes = Maps.newHashMap();
-    private final Map<OgexBoneNode, Node<Bone>> ogexBoneToForgeBoneMap = Maps.newHashMap();
+    private final Map<OgexBoneNode, Bone> ogexBoneToForgeBoneMap = Maps.newHashMap();
     private final List<Texture> textures = Lists.newArrayList();
     private final Queue<UnprocessedMeshBoneMapEntry> meshBoneMapQueue = Lists.newLinkedList();
 
@@ -96,7 +98,7 @@ class Parser {
                     final OgexBoneNode ogexBoneNode = boneWeightPose.ogexBoneNode;
                     final TRSRTransformation invBindPose = boneWeightPose.invertedBindPose;
 
-                    final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode);
+                    final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode).getParent();
                     boneNode.getKind().getData().add(new VertexWeight(vertex, boneWeightPose.weight));
                     // TODO check if bone instance can be shared with multiple inv bind poses, and make a copy if true
                     boneNode.getKind().setInvBindPose(invBindPose);
@@ -129,10 +131,10 @@ class Parser {
             }
         }
 
-        TRSRTransformation objectOnlyTrsr = TRSRTransformation.identity();
-        TRSRTransformation optionalGlobalTrsr = TRSRTransformation.identity();
+        TRSRTransformation globalTrsr = TRSRTransformation.identity();
+        TRSRTransformation objectTrsr = TRSRTransformation.identity();
         String name = "";
-        IAnimation animation = null;
+        Function<? super Node<?>, ? extends IAnimation> animFactory = null;
 
         boolean hasObjectOnly = false;
 
@@ -158,60 +160,56 @@ class Parser {
                 }
             }
             //TODO: Are these transformations assigned to the right children?
-            objectOnlyTrsr = new TRSRTransformation(actualNodeTransformation);
-            optionalGlobalTrsr = new TRSRTransformation(objectOnlyTransformations);
+            globalTrsr = new TRSRTransformation(actualNodeTransformation);
+            objectTrsr = new TRSRTransformation(objectOnlyTransformations);
 
             name = ogexNode.getName();
             // FIXME more than 1 clip
             if(!ogexNode.getAnimations().isEmpty()) {
                 final OgexAnimation ogexAnimation = ogexNode.getAnimations().iterator().next();
-                animation = new OpenGEXAnimation(ogexNode.getTransforms(), ogexAnimation, upMatrix);
+                animFactory = Functions.constant(new OpenGEXAnimation(ogexNode.getTransforms(), ogexAnimation, upMatrix));
             }
         }
 
-        Node<?> node;
+        IKind kind;
         if (openGEXNode instanceof OgexGeometryNode) {
             final OgexGeometryNode ogexGeometryNode = (OgexGeometryNode) openGEXNode;
             final List<Mesh> createdMeshes = createMeshes(ogexGeometryNode);
             if (createdMeshes.size() == 1) {
                 final Mesh mesh = createdMeshes.get(0);
-                node = mesh != null ?
-                        Node.create(name, objectOnlyTrsr, childNodes, mesh) :
-                        Node.create(name, objectOnlyTrsr, childNodes, new Pivot());
+                kind = mesh != null ? mesh : new Pivot();
             } else {
                 int itemIndex = 0;
                 for (final Mesh mesh : createdMeshes)
                 {
-                    childNodes.add(Node.create(name + "-MeshChild#" + itemIndex, objectOnlyTrsr, Lists.<Node<?>>newArrayList(), mesh));
+                    childNodes.add(Node.create(name + "-MeshChild#" + itemIndex, TRSRTransformation.identity(), Lists.<Node<?>>newArrayList(), mesh, null, false));
                     itemIndex++;
                 }
 
-                node = Node.create(name, objectOnlyTrsr, childNodes, new Pivot());
+                kind = new Pivot();
             }
         } else
         {
             if (openGEXNode instanceof OgexBoneNode)
             {
                 final OgexBoneNode ogexBoneNode = (OgexBoneNode) openGEXNode;
-                final Node<Bone> boneNode = Node.create(name, objectOnlyTrsr, childNodes, new Bone());
-                ogexBoneToForgeBoneMap.put(ogexBoneNode, boneNode);
-                node = boneNode;
+                final Bone bone = new Bone();
+                ogexBoneToForgeBoneMap.put(ogexBoneNode, bone);
+                kind = bone;
             } else
             {
-                node = Node.create(name, objectOnlyTrsr, childNodes, new Pivot());
+                kind = new Pivot();
             }
         }
 
+        //FIXME: It's entirely possible that an object-only element has an animation against it. The animation will need to be split up if this ever occurs.
         if (hasObjectOnly) {
-            final List<Node<?>> autoNodeChildren = Lists.<Node<?>>newArrayList(node);
-            node = Node.create(name + "-Auto-ObjectOnlySeperator", optionalGlobalTrsr, autoNodeChildren, new Pivot());
+            childNodes.add(Node.create(name, objectTrsr, ImmutableList.<Node<?>>of(), kind, null, false));
+            name += "-Auto-ObjectOnlySeperator";
+            kind = new Pivot();
         }
 
-        if(animation != null)
-        {
-            //FIXME: It's entirely possible that an object-only element has an animation against it. The animation will need to be split up if this ever occurs.
-            node.setAnimation(animation);
-        }
+        Node<?> node = Node.create(name, globalTrsr, childNodes, kind, animFactory, false);
         return node;
     }
 

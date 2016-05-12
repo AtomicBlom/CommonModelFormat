@@ -10,4 +10,11 @@ public class OgexChestTileEntity extends ChestTileEntityBase {
     {
         super("snek");
     }
+
+    // when it's slimy snek
+    @Override
+    public boolean shouldRenderInPass(int pass)
+    {
+        return pass == 1;
+    }
 }

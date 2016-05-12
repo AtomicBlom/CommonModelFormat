@@ -82,10 +82,4 @@ public abstract class ChestTileEntityBase extends TileEntity
         }
         return super.getCapability(capability, side);
     }
-
-    @Override
-    public boolean shouldRenderInPass(int pass)
-    {
-        return pass == 1;
-    }
 }

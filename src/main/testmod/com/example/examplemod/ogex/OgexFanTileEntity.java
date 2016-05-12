@@ -10,10 +10,4 @@ public class OgexFanTileEntity extends ChestTileEntityBase {
     {
         super("SSFanLarge");
     }
-
-    @Override
-    public boolean shouldRenderInPass(int pass)
-    {
-        return true;
-    }
 }

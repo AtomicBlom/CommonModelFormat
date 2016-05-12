@@ -122,7 +122,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
 
             Mesh mesh = new Mesh(jointDebugBrush, ImmutableList.copyOf(Iterables.concat(staticFaces, staticBoneFaces, staticFaces2, dynamicFaces, dynamicBoneFaces)));
             // setting dummy mesh node
-            Node.create("DummyBoneMeshNode", TRSRTransformation.identity(), ImmutableList.<Node<?>>of(), mesh);
+            Node.create("DummyBoneMeshNode", TRSRTransformation.identity(), ImmutableList.<Node<?>>of(), mesh, null, false);
             mesh.setWeightMap(weightBuilder.build());
             mesh.setBones(ImmutableSet.of((Node<Bone>) node));
             buildMesh(builder, state, mesh);

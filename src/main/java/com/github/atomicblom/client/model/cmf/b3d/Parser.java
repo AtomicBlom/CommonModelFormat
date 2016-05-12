@@ -1,11 +1,9 @@
 package com.github.atomicblom.client.model.cmf.b3d;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Table;
+import com.google.common.collect.*;
 import com.github.atomicblom.client.model.cmf.common.*;
 import net.minecraftforge.common.model.TRSRTransformation;
 import org.apache.commons.io.IOUtils;
@@ -13,6 +11,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nullable;
 import javax.vecmath.Quat4f;
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
@@ -418,12 +418,30 @@ public class Parser
         }
         dump("}");
         popLimit();
-        Table<Integer, Optional<Node<?>>, Key> keyData = animations.pop();
+        final Table<Integer, Optional<Node<?>>, Key> keyData = animations.pop();
         Node<?> node;
+        Function<? super Node<?>, ? extends IAnimation> animFactory = null;
+        if(animData != null)
+        {
+            final Triple<Integer, Integer, Float> finalAnimData = animData;
+            animFactory = new Function<Node<?>, IAnimation>()
+            {
+                @Override
+                public IAnimation apply(Node<?> node)
+                {
+                    ImmutableTable.Builder<Integer, Node<?>, Key> builder = ImmutableTable.builder();
+                    for (Table.Cell<Integer, Optional<Node<?>>, Key> key : keyData.cellSet())
+                    {
+                        builder.put(key.getRowKey(), key.getColumnKey().or(node), key.getValue());
+                    }
+                    return new B3DAnimation(finalAnimData.getLeft(), finalAnimData.getMiddle(), finalAnimData.getRight(), builder.build());
+                }
+            };
+        }
         if(mesh != null)
         {
             final Mesh meshKind = new Mesh(mesh.getLeft(), mesh.getRight());
-            Node<Mesh> mNode = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, meshKind);
+            Node<Mesh> mNode = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, meshKind, animFactory, true);
 
             ImmutableMultimap.Builder<Vertex, BoneWeight> builder = ImmutableMultimap.builder();
             for (Node<Bone> childBone : meshKind.getBones()) {
@@ -437,18 +455,14 @@ public class Parser
             meshes.put(name, mNode);
             node = mNode;
         }
-        else if(bone != null) node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Bone(bone));
-        else node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Pivot());
+        else if(bone != null) node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Bone(bone), animFactory, true);
+        else node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Pivot(), animFactory, true);
         if(animData == null)
         {
             for(Table.Cell<Integer, Optional<Node<?>>, Key> key : keyData.cellSet())
             {
                 animations.peek().put(key.getRowKey(), key.getColumnKey().or(Optional.of(node)), key.getValue());
             }
-        }
-        else
-        {
-            node.setAnimation(animData, keyData);
         }
         return node;
     }

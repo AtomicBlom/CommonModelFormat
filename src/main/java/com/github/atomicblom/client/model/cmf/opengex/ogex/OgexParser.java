@@ -708,7 +708,7 @@ public class OgexParser {
             throw new RuntimeException("VertexArray has no 'attrib' property");
         }
         result.setName(name);
-        result.setMorph(ds.getProperty("morph", 0));
+        result.setMorph((long)(double)ds.getProperty("morph", 0d));
         
         PrimitiveStructure struct = ds.getPrimitiveChild(true);
         if( struct.getElementSize() > 1 ) {

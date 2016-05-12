@@ -2,13 +2,7 @@
   "forge_marker": 1,
   "defaults": {
     "textures": {
-      "chest": "entity/chest/normal",
-      "base": "blocks/stone",
-      "front": "blocks/log_oak",
-      "chamber": "blocks/redstone_block",
-      "trunk": "blocks/end_stone",
-      "//C/Users/codew/Pictures/stone": "blocks/stone",
-      "//C/Users/Rosethorns/Documents/3dsMax/scenes/Minecraft/stone": "blocks/slime"
+      "//D/The Forge/Minecraft/SteamNSteel/Models/SSFanLarge": "examplemod:models/SSFanLarge"
     },
     "model": "examplemod:SSFanLarge.ogex",
     "custom": {
@@ -30,11 +24,9 @@
     },
     "static": {
       "true": {
-        "model": "builtin/generated",
         "custom": {
             "mesh": ["SSLargeFanChasis"]
         }
-        //"cmf": "examplemod:engine"
       },
       "false": {
         "custom": {

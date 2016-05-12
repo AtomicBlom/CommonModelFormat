@@ -129,13 +129,38 @@ class Parser {
             }
         }
 
-        TRSRTransformation trsr = TRSRTransformation.identity();
+        TRSRTransformation objectOnlyTrsr = TRSRTransformation.identity();
+        TRSRTransformation optionalGlobalTrsr = TRSRTransformation.identity();
         String name = "";
         IAnimation animation = null;
 
+        boolean hasObjectOnly = false;
+
         if (openGEXNode instanceof OgexNode) {
             final OgexNode ogexNode = (OgexNode) openGEXNode;
-            trsr = getTRSRTransformationFromTransforms(ogexNode.getTransforms());
+            final Matrix4f actualNodeTransformation = new Matrix4f();
+            actualNodeTransformation.setIdentity();
+            final Matrix4f objectOnlyTransformations = new Matrix4f();
+            objectOnlyTransformations.setIdentity();
+
+            final Matrix4f transform = new Matrix4f();
+            for (final OgexTransform ogexTransform : ogexNode.getTransforms()) {
+                transform.set(ogexTransform.toMatrix());
+                transform.mul(upMatrix, transform);
+                transform.mul(upMatrixInverted);
+
+                if (ogexTransform.isObjectOnly()) {
+                    hasObjectOnly = true;
+                    objectOnlyTransformations.mul(transform);
+                } else
+                {
+                    actualNodeTransformation.mul(transform);
+                }
+            }
+            //TODO: Are these transformations assigned to the right children?
+            objectOnlyTrsr = new TRSRTransformation(actualNodeTransformation);
+            optionalGlobalTrsr = new TRSRTransformation(objectOnlyTransformations);
+
             name = ogexNode.getName();
             // FIXME more than 1 clip
             if(!ogexNode.getAnimations().isEmpty()) {
@@ -144,41 +169,47 @@ class Parser {
             }
         }
 
-        final Node<?> node;
+        Node<?> node;
         if (openGEXNode instanceof OgexGeometryNode) {
             final OgexGeometryNode ogexGeometryNode = (OgexGeometryNode) openGEXNode;
             final List<Mesh> createdMeshes = createMeshes(ogexGeometryNode);
             if (createdMeshes.size() == 1) {
                 final Mesh mesh = createdMeshes.get(0);
                 node = mesh != null ?
-                        Node.create(name, trsr, childNodes, mesh) :
-                        Node.create(name, trsr, childNodes, new Pivot());
+                        Node.create(name, objectOnlyTrsr, childNodes, mesh) :
+                        Node.create(name, objectOnlyTrsr, childNodes, new Pivot());
             } else {
                 int itemIndex = 0;
                 for (final Mesh mesh : createdMeshes)
                 {
-                    childNodes.add(Node.create(name + "-MeshChild#" + itemIndex, trsr, Lists.<Node<?>>newArrayList(), mesh));
+                    childNodes.add(Node.create(name + "-MeshChild#" + itemIndex, objectOnlyTrsr, Lists.<Node<?>>newArrayList(), mesh));
                     itemIndex++;
                 }
 
-                node = Node.create(name, trsr, childNodes, new Pivot());
+                node = Node.create(name, objectOnlyTrsr, childNodes, new Pivot());
             }
         } else
         {
             if (openGEXNode instanceof OgexBoneNode)
             {
                 final OgexBoneNode ogexBoneNode = (OgexBoneNode) openGEXNode;
-                final Node<Bone> boneNode = Node.create(name, trsr, childNodes, new Bone());
+                final Node<Bone> boneNode = Node.create(name, objectOnlyTrsr, childNodes, new Bone());
                 ogexBoneToForgeBoneMap.put(ogexBoneNode, boneNode);
                 node = boneNode;
             } else
             {
-                node = Node.create(name, trsr, childNodes, new Pivot());
+                node = Node.create(name, objectOnlyTrsr, childNodes, new Pivot());
             }
+        }
+
+        if (hasObjectOnly) {
+            final List<Node<?>> autoNodeChildren = Lists.<Node<?>>newArrayList(node);
+            node = Node.create(name + "-Auto-ObjectOnlySeperator", optionalGlobalTrsr, autoNodeChildren, new Pivot());
         }
 
         if(animation != null)
         {
+            //FIXME: It's entirely possible that an object-only element has an animation against it. The animation will need to be split up if this ever occurs.
             node.setAnimation(animation);
         }
         return node;
@@ -370,20 +401,6 @@ class Parser {
         final Vertex vertex = new Vertex(position, normal, colour, uvs);
 
         return Pair.of(vertex, normal);
-    }
-
-    private TRSRTransformation getTRSRTransformationFromTransforms(List<OgexTransform> transforms) {
-        final Matrix4f transformation = new Matrix4f();
-        transformation.setIdentity();
-
-        final Matrix4f transform = new Matrix4f();
-        for (final OgexTransform ogexTransform : transforms) {
-            transform.set(ogexTransform.toMatrix());
-            transform.mul(upMatrix, transform);
-            transform.mul(upMatrixInverted);
-            transformation.mul(transform);
-        }
-        return new TRSRTransformation(transformation);
     }
 
     private void getBrushes(OgexScene ogexScene) {

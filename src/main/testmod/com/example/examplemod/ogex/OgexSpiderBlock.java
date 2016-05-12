@@ -1,11 +1,8 @@
 package com.example.examplemod.ogex;
 
 import com.example.examplemod.ChestBlockBase;
-import com.example.examplemod.ChestTileEntityBase;
-import com.example.examplemod.ExampleMod;
 import com.example.examplemod.Resources;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
@@ -19,11 +16,7 @@ import net.minecraft.world.World;
  */
 public class OgexSpiderBlock extends ChestBlockBase {
     public OgexSpiderBlock() {
-        {
-            setCreativeTab(CreativeTabs.BUILDING_BLOCKS);
-            setUnlocalizedName(ExampleMod.MODID + "." + Resources.OgexBlocks.blockSpiderName);
-            setRegistryName(Resources.OgexBlocks.blockSpiderId);
-        }
+        super(Resources.OgexBlocks.blockSpiderId);
     }
 
     @Override

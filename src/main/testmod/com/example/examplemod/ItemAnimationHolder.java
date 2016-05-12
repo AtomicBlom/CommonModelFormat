@@ -6,26 +6,34 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.animation.ITimeValue;
 import net.minecraftforge.common.animation.TimeValues;
 import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.model.animation.CapabilityAnimation;
 import net.minecraftforge.common.model.animation.IAnimationStateMachine;
 
 /**
  * Created by codew on 4/05/2016.
  */
-public class ItemAnimationHolder implements ICapabilityProvider
+public class ItemAnimationHolder implements IAnimationHolder
 {
+    private IAnimationStateMachine asm = null;
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
+    private final ImmutableMap<String, ITimeValue> parameters = ImmutableMap.<String, ITimeValue>of(
+        "cycle_length", cycleLength
+    );
+    private final ResourceLocation asmLocation;
 
-    private final IAnimationStateMachine asm = ExampleMod.proxy.load(new ResourceLocation(ExampleMod.MODID.toLowerCase(), "asms/block/chest.json"), ImmutableMap.<String, ITimeValue>of(
-            "cycle_length", cycleLength
-    ));
+    public ItemAnimationHolder(ResourceLocation itemName)
+    {
+        this.asmLocation = new ResourceLocation(itemName.getResourceDomain(), "asms/block/" + itemName.getResourcePath() + ".json");
+        ExampleMod.proxy.register(this);
+    }
 
+    @Override
     public boolean hasCapability(Capability<?> capability, EnumFacing facing)
     {
         return capability == CapabilityAnimation.ANIMATION_CAPABILITY;
     }
 
+    @Override
     public <T> T getCapability(Capability<T> capability, EnumFacing facing)
     {
         if (capability == CapabilityAnimation.ANIMATION_CAPABILITY)
@@ -34,4 +42,24 @@ public class ItemAnimationHolder implements ICapabilityProvider
         }
         return null;
     }
+
+    @Override
+    public ResourceLocation getAsmLocation()
+    {
+        return asmLocation;
+    }
+
+    @Override
+    public ImmutableMap<String, ITimeValue> getParameters()
+    {
+        return parameters;
+    }
+
+    @Override
+    public void setAsm(IAnimationStateMachine asm)
+    {
+        this.asm = asm;
+    }
+
+    // TODO figure out when to unload this
 }

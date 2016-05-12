@@ -128,9 +128,9 @@ public class BakedWrapper implements IPerspectiveAwareModel
             buildMesh(builder, state, mesh);
         }
 
-        if (node.getKind() instanceof Mesh && meshes.contains(node.getName()))
+        //if (node.getKind() instanceof Mesh && meshes.contains(node.getName()))
         // show all meshes, helpful for debugging
-        //if (node.getKind() instanceof Mesh)
+        if (node.getKind() instanceof Mesh)
         {
             Mesh mesh = (Mesh) node.getKind();
             buildMesh(builder, state, mesh);

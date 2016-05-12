@@ -26,21 +26,40 @@
     } */
     "progress": [ "-/", "#click_time", "#length" ],
     // float speed() { return 1; };
-    "speed": 1
+    "speed": 1,
+    "walk_time": [ "*f+/", "#fps", 10, 10, "#fps" ],
+    "end_starting_clip": [ "compose", [ "-/", 10, "#fps" ], "#time_since_last_click_in_fps" ],
+    "end_stopping_clip": [ "compose", [ "-/", 10, "#fps" ], "#time_since_last_click_in_fps" ]
   },
   "clips": {
     "model": "examplemod:block/SSSteamSpider.ogex@main",
     "main": [ "apply", "#model", ["/f", 2, 1.66667] ],
     "stopped": [ "apply", "#model", 0 ],
     "startWalking": [
+      "trigger_positive",
+      [
         "apply", "#model", [
           "compose",
-            ["f/", 22, "#fps"],
-            "#time_since_last_click_in_fps"
-      ]
+          ["m/", 10, "#fps"],
+          "#time_since_last_click_in_fps"
+        ]
+      ],
+      "#end_starting_clip",
+      "!transition:walkLoop"
     ],
-    "walkLoop": "#identity",
-    "stopWalking": "#identity"
+    "walkLoop": [ "apply", "#model", "#walk_time"],
+    "stopWalking": [
+      "trigger_positive",
+      [
+        "apply", "#model", [
+          "compose",
+          ["+m/", 20, 30, "#fps"],
+          "#time_since_last_click_in_fps"
+        ]
+      ],
+      "#end_stopping_clip",
+      "!transition:stopped"
+    ]
   },
 
   "states": [

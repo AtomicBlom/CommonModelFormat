@@ -1,6 +1,7 @@
 package com.example.examplemod.ogex;
 
 import com.example.examplemod.ChestTileEntityBase;
+import com.example.examplemod.Resources;
 
 /**
  * Created by codew on 5/05/2016.
@@ -8,7 +9,7 @@ import com.example.examplemod.ChestTileEntityBase;
 public class OgexChestTileEntity extends ChestTileEntityBase {
     public OgexChestTileEntity()
     {
-        super("snek");
+        super(Resources.OgexBlocks.blockChestId);
     }
 
     // when it's slimy snek

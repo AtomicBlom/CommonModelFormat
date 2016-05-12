@@ -1,31 +1,33 @@
 package com.example.examplemod;
 
 import com.google.common.collect.ImmutableMap;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.animation.Animation;
 import net.minecraftforge.common.animation.Event;
 import net.minecraftforge.common.animation.ITimeValue;
 import net.minecraftforge.common.animation.TimeValues;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.model.animation.CapabilityAnimation;
-import net.minecraftforge.common.model.animation.IAnimationStateMachine;
 
 import static com.example.examplemod.ExampleMod.MODID;
-import static com.example.examplemod.ExampleMod.proxy;
 
-public abstract class ChestTileEntityBase extends TileEntity
+public abstract class ChestTileEntityBase extends AnimationTileEntityBase
 {
-    private final IAnimationStateMachine asm;
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
     private final TimeValues.VariableValue clickTime = new TimeValues.VariableValue(Float.NEGATIVE_INFINITY);
+    private final ImmutableMap<String, ITimeValue> parameters = ImmutableMap.<String, ITimeValue>of(
+        "cycle_length", cycleLength,
+        "click_time", new TimeValues.VariableValue(Float.NEGATIVE_INFINITY)
+    );
 
-    public ChestTileEntityBase(String asmName)
+    public ChestTileEntityBase(ResourceLocation blockName)
     {
-        asm = proxy.load(new ResourceLocation(MODID.toLowerCase(), "asms/block/" + asmName + ".json"), ImmutableMap.<String, ITimeValue>of(
-            "click_time", clickTime
-        ));
+        super(new ResourceLocation(blockName.getResourceDomain(), "asms/block/" + blockName.getResourcePath() + ".json"));
+        ExampleMod.proxy.register(this);
+    }
+
+    @Override
+    public ImmutableMap<String, ITimeValue> getParameters()
+    {
+        return parameters;
     }
 
     public void handleEvents(float time, Iterable<Event> pastEvents)
@@ -36,50 +38,24 @@ public abstract class ChestTileEntityBase extends TileEntity
         }
     }
 
-    @Override
-    public boolean hasFastRenderer()
-    {
-        return true;
-    }
-
     public void click(boolean sneaking)
     {
-        if (asm != null)
+        if (getAsm() != null)
         {
             if (sneaking)
             {
                 cycleLength.setValue(6 - cycleLength.apply(0));
             }
-            else if(asm.currentState().equals("closed"))
+            else if(getAsm().currentState().equals("closed"))
             {
                 clickTime.setValue(Animation.getWorldTime(getWorld()));
-                asm.transition("opening");
+                getAsm().transition("opening");
             }
-            else if(asm.currentState().equals("open"))
+            else if(getAsm().currentState().equals("open"))
             {
                 clickTime.setValue(Animation.getWorldTime(getWorld()));
-                asm.transition("closing");
+                getAsm().transition("closing");
             }
         }
-    }
-
-    @Override
-    public boolean hasCapability(Capability<?> capability, EnumFacing side)
-    {
-        if (capability == CapabilityAnimation.ANIMATION_CAPABILITY)
-        {
-            return true;
-        }
-        return super.hasCapability(capability, side);
-    }
-
-    @Override
-    public <T> T getCapability(Capability<T> capability, EnumFacing side)
-    {
-        if (capability == CapabilityAnimation.ANIMATION_CAPABILITY)
-        {
-            return CapabilityAnimation.ANIMATION_CAPABILITY.cast(asm);
-        }
-        return super.getCapability(capability, side);
     }
 }

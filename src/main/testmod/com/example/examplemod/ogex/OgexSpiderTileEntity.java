@@ -18,9 +18,11 @@ import static com.example.examplemod.ExampleMod.MODID;
 public class OgexSpiderTileEntity extends AnimationTileEntityBase
 {
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
-    private final TimeValues.VariableValue clickTime = new TimeValues.VariableValue(Float.NEGATIVE_INFINITY);
+    private final TimeValues.VariableValue clickStart = new TimeValues.VariableValue(Float.NEGATIVE_INFINITY);
+    private final TimeValues.VariableValue clickEnd = new TimeValues.VariableValue(Float.NEGATIVE_INFINITY);
     private final ImmutableMap<String, ITimeValue> parameters = ImmutableMap.<String, ITimeValue>of(
-        "click_time", clickTime
+        "click_start", clickStart,
+        "click_end", clickEnd
     );
 
     public OgexSpiderTileEntity()
@@ -52,12 +54,12 @@ public class OgexSpiderTileEntity extends AnimationTileEntityBase
                 cycleLength.setValue(6 - cycleLength.apply(0));
             } else if (getAsm().currentState().equals("stopped"))
             {
-                clickTime.setValue(Animation.getWorldTime(getWorld()));
-                getAsm().transition("startWalking");
-            } else if (getAsm().currentState().equals("walkLoop"))
+                clickStart.setValue(Animation.getWorldTime(getWorld()));
+                getAsm().transition("start_walking");
+            } else if (getAsm().currentState().equals("walk_loop"))
             {
-                clickTime.setValue(Animation.getWorldTime(getWorld()));
-                getAsm().transition("stopWalking");
+                clickEnd.setValue(Animation.getWorldTime(getWorld()));
+                getAsm().transition("walk_loop_end");
             }
         }
     }

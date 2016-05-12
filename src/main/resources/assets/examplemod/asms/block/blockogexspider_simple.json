@@ -1,0 +1,78 @@
+{
+  //Externally defined parameters - Variable
+  // float click_time() { return TileEntity.clickTime; }
+
+  "parameters": {
+    // float fps() { return 1.66667 };
+    "length": 1.66667,
+    // float fps() { return 30 };
+    "fps": 30,
+    /* float time_since_last_click_in_fps(float input) {
+        return (input - click_time()) * fps();
+      } */
+    "time_since_last_click_in_fps": ["-*", "#click_time", "#fps"],
+    /* float end_anim(float input) {
+        return click_time() + length();
+      } */
+    //
+    "end_anim": [ "compose", [ "+", "#length" ] , "#click_time" ],
+    /* float trigger_anim(float input) {
+      return input - endAnim(input);
+    } */
+    "trigger_anim": [ "-", "#end_anim" ],
+    /* float progress(float input) {
+      //Progress is defined from 0 to 1 (0 = click_time(), 1 = end_time())
+      return (input - click_time()) / length();
+    } */
+    "progress": [ "-/", "#click_time", "#length" ],
+    // float speed() { return 1; };
+    "speed": 1,
+    "walk_time": [ "*f+/", "#fps", 10, 10, "#fps" ],
+    "end_starting_clip": [ "compose", [ "-/", 10, "#fps" ], "#time_since_last_click_in_fps" ],
+    "end_stopping_clip": [ "compose", [ "-/", 10, "#fps" ], "#time_since_last_click_in_fps" ]
+  },
+  "clips": {
+    "model": "examplemod:block/SSSteamSpider.ogex@main",
+    "main": [ "apply", "#model", ["/f", 2, 1.66667] ],
+    "stopped": [ "apply", "#model", 0 ],
+    "startWalking": [
+      "trigger_positive",
+      [
+        "apply", "#model", [
+          "compose",
+          ["m/", 10, "#fps"],
+          "#time_since_last_click_in_fps"
+        ]
+      ],
+      "#end_starting_clip",
+      "!transition:walkLoop"
+    ],
+    "walkLoop": [ "apply", "#model", "#walk_time"],
+    "stopWalking": [
+      "trigger_positive",
+      [
+        "apply", "#model", [
+          "compose",
+          ["+m/", 20, 30, "#fps"],
+          "#time_since_last_click_in_fps"
+        ]
+      ],
+      "#end_stopping_clip",
+      "!transition:stopped"
+    ]
+  },
+
+  "states": [
+    "stopped",
+    "startWalking",
+    "walkLoop",
+    "stopWalking"
+  ],
+  "transitions": {
+    "stopped": "startWalking",
+    "startWalking": "walkLoop",
+    "walkLoop": "stopWalking",
+    "stopWalking": "stopped"
+  },
+  "start_state": "stopped"
+}

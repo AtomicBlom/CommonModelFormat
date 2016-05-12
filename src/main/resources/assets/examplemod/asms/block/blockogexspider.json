@@ -1,62 +1,46 @@
 {
   //Externally defined parameters - Variable
-  // float click_time() { return TileEntity.clickTime; }
+  // float click_start() { return TileEntity.clickStart; }
+  // float click_end() { return TileEntity.clickEnd; }
 
   "parameters": {
-    // float fps() { return 1.66667 };
-    "length": 1.66667,
-    // float fps() { return 30 };
     "fps": 30,
-    /* float time_since_last_click_in_fps(float input) {
-        return (input - click_time()) * fps();
-      } */
-    "time_since_last_click_in_fps": ["-*", "#click_time", "#fps"],
-    /* float end_anim(float input) {
-        return click_time() + length();
-      } */
-    //
-    "end_anim": [ "compose", [ "+", "#length" ] , "#click_time" ],
-    /* float trigger_anim(float input) {
-      return input - endAnim(input);
-    } */
-    "trigger_anim": [ "-", "#end_anim" ],
-    /* float progress(float input) {
-      //Progress is defined from 0 to 1 (0 = click_time(), 1 = end_time())
-      return (input - click_time()) / length();
-    } */
-    "progress": [ "-/", "#click_time", "#length" ],
-    // float speed() { return 1; };
-    "speed": 1,
-    "walk_time": [ "*f+/", "#fps", 10, 10, "#fps" ],
-    "end_starting_clip": [ "compose", [ "-/", 10, "#fps" ], "#time_since_last_click_in_fps" ],
-    "end_stopping_clip": [ "compose", [ "-/", 10, "#fps" ], "#time_since_last_click_in_fps" ]
+    "starting_length": 10,
+    "walk_length": 10,
+    "stopping_length": 10,
+
+    "click_start_frames": [ "compose", [ "*", "#fps" ], "#click_start" ],
+    "since_click_start": [ "-*", "#click_start", "#fps" ],
+    "since_click_end": [ "-*", "#click_end", "#fps" ],
+    "next_cycle_end": [ "compose", [ "-*R+", "#click_start", "#fps", "#walk_length", "#click_start_frames"], "#click_end" ],
+
+    "starting_time": [ "compose", [ "m/", "#starting_length", "#fps" ], "#since_click_start" ],
+    "walk_time":     [ "compose", [ "-f+/", "#starting_length", "#walk_length", "#starting_length", "#fps" ], "#since_click_start" ],
+    "stopping_time": [ "*-m++/", "#fps", "#next_cycle_end", "#stopping_length", "#starting_length", "#walk_length", "#fps" ],
+
+    "end_starting_clip": [ "compose", [ "-", "#starting_length" ], "#since_click_start" ],
+    "end_walk_clip": [ "*-", "#fps", "#next_cycle_end" ],
+    "end_stopping_clip": [ "*--", "#fps", "#next_cycle_end", "#stopping_length" ]
   },
   "clips": {
     "model": "examplemod:block/SSSteamSpider.ogex@main",
-    "main": [ "apply", "#model", ["/f", 2, 1.66667] ],
     "stopped": [ "apply", "#model", 0 ],
-    "startWalking": [
+    "start_walking": [
       "trigger_positive",
-      [
-        "apply", "#model", [
-          "compose",
-          ["m/", 10, "#fps"],
-          "#time_since_last_click_in_fps"
-        ]
-      ],
+      [ "apply", "#model", "#starting_time" ],
       "#end_starting_clip",
-      "!transition:walkLoop"
+      "!transition:walk_loop"
     ],
-    "walkLoop": [ "apply", "#model", "#walk_time"],
-    "stopWalking": [
+    "walk_loop": [ "apply", "#model", "#walk_time"],
+    "walk_loop_end": [
       "trigger_positive",
-      [
-        "apply", "#model", [
-          "compose",
-          ["+m/", 20, 30, "#fps"],
-          "#time_since_last_click_in_fps"
-        ]
-      ],
+      "#walk_loop",
+      "#end_walk_clip",
+      "!transition:stop_walking"
+    ],
+    "stop_walking": [
+      "trigger_positive",
+      [ "apply", "#model", "#stopping_time" ],
       "#end_stopping_clip",
       "!transition:stopped"
     ]
@@ -64,15 +48,17 @@
 
   "states": [
     "stopped",
-    "startWalking",
-    "walkLoop",
-    "stopWalking"
+    "start_walking",
+    "walk_loop",
+    "walk_loop_end",
+    "stop_walking"
   ],
   "transitions": {
-    "stopped": "startWalking",
-    "startWalking": "walkLoop",
-    "walkLoop": "stopWalking",
-    "stopWalking": "stopped"
+    "stopped": "start_walking",
+    "start_walking": "walk_loop",
+    "walk_loop": "walk_loop_end",
+    "walk_loop_end": "stop_walking",
+    "stop_walking": "stopped"
   },
   "start_state": "stopped"
 }

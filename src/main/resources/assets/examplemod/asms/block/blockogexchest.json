@@ -4,36 +4,17 @@
     "end_anim": [ "compose", [ "+", "#length" ] , "#click_time" ],
     "trigger_anim": [ "-", "#end_anim" ],
     "progress": [ "-/", "#click_time", "#length" ],
+    //"progress": 0.5,
     "speed": 1
   },
   "clips": {
-    "model": "examplemod:block/chest.ogex@main",
-    "closed": [ "apply", "#model", 0 ],
-    "opening": [
-      "trigger_positive",
-      [ "apply", "#model", [ "compose", [ "*", "#speed" ], "#progress"] ],
-      "#trigger_anim",
-      "!transition:open"
-    ],
-    "open": [ "apply", "#model", 10 ],
-    "closing": [
-      "trigger_positive",
-      [ "apply", "#model", [ "compose", [ "*+*", -1, 1, "#speed" ], "#progress" ] ],
-      "#trigger_anim",
-      "!transition:closed"
-    ]
+    "model": "examplemod:block/snek.ogex@main",
+    "main": [ "apply", "#model", ["/f", 2, 2.5] ]
   },
   "states": [
-    "closed",
-    "opening",
-    "open",
-    "closing"
+    "main"
   ],
   "transitions": {
-    "closed": "opening",
-    "opening": "open",
-    "open": "closing",
-    "closing": "closed"
   },
-  "start_state": "closed"
+  "start_state": "main"
 }

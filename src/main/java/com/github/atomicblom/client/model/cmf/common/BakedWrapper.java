@@ -245,7 +245,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
             @Override
             public Matrix4f apply(Node<?> node)
             {
-                final TRSRTransformation unchecked = state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());//localCache.getUnchecked(node);
+                final TRSRTransformation unchecked = localCache.getUnchecked(node);
                 return global.compose(unchecked).getMatrix();
             }
         });

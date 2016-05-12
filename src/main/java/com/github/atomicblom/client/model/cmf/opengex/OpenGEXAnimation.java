@@ -125,12 +125,25 @@ class OpenGEXAnimation implements IAnimation
         final float[][] value = valueData.value;
         final float s = adjustedTime;
         // FIXME: be more careful with indices
-        final TRSRTransformation v1 = getTrackData(track, value[index == 0 ? 0 : index - 1]);
-        final TRSRTransformation v2 = getTrackData(track, value[index]);
+        final float[] v1 = value[index == 0 ? 0 : index - 1];
+        final float[] v2 = value[index];
 
-        //float si = (s - v1) / (v2 - v1);
+        // do per-component if not a full matrix
+        if(v1.length < 16)
+        {
+            // scalar argument, do scalar interpolation
+            float[] v = new float[v1.length];
+            for (int i = 0; i < v1.length; i++)
+            {
+                v[i] = v1[i] * (1 - s) + v2[i] * s;
+            }
+            return getTrackData(track, v);
+        }
 
-        return v1.slerp(v2, s);
+        // do matrix lerp if full matrix
+        TRSRTransformation t1 = getTrackData(track, v1);
+        TRSRTransformation t2 = getTrackData(track, v2);
+        return t1.slerp(t2, s);
     }
 
     private TRSRTransformation getAdjustedBezierValue(OgexTrack track, ValueData valueData, int index, float adjustedTime) {
@@ -142,18 +155,22 @@ class OpenGEXAnimation implements IAnimation
         final float[] p2 = valueData.negativeControl[index];
         final float[] v2 = value[index];
 
-        // FIXME: maybe choose the method more carefully
-        if(v1.length == 1)
+        // do per-component if not a full matrix
+        if(v1.length < 16)
         {
             // scalar argument, do scalar interpolation
-            float v =
-                v1[0] *     (1 - s) * (1 - s) * (1 - s) +
-                p1[0] * 3 *      s  * (1 - s) * (1 - s) +
-                p2[0] * 3 *      s  *      s  * (1 - s) +
-                v2[0] *          s  *      s  *      s;
-            return getTrackData(track, new float[]{v});
+            float[] v = new float[v1.length];
+            for(int i = 0; i < v1.length; i++)
+            {
+                v[i] =
+                    v1[i] * (1 - s) * (1 - s) * (1 - s) +
+                    p1[i] * 3 * s * (1 - s) * (1 - s) +
+                    p2[i] * 3 * s * s * (1 - s) +
+                    v2[i] * s * s * s;
+            }
+            return getTrackData(track, v);
         }
-        // do matrix lerp if not
+        // do matrix lerp if full matrix
         Matrix4f m = getTrackData(track, v1).getMatrix(), t;
         m.mul((1 - s) * (1 - s) * (1 - s));
         t = getTrackData(track, p1).getMatrix();

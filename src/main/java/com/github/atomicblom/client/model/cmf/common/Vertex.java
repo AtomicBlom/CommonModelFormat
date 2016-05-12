@@ -28,10 +28,10 @@ public class Vertex {
 
     public Vertex bake(Mesh mesh, Function<Node<?>, Matrix4f> animator) {
         // geometry
-        Float totalWeight = 0f;
+        float totalWeight = 0f;
         Matrix4f t = new Matrix4f();
         if (mesh.getWeightMap().get(this).isEmpty()) {
-            t.add(animator.apply(mesh.getParent()));
+            t.set(animator.apply(mesh.getParent()));
         } else {
             for (BoneWeight boneWeight : mesh.getWeightMap().get(this)) {
                 totalWeight += boneWeight.getWeight();

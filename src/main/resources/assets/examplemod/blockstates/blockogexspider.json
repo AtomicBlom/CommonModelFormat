@@ -1,0 +1,40 @@
+{
+  "forge_marker": 1,
+  "defaults": {
+    "textures": {
+      "//D/The Forge/Minecraft/SteamNSteel/Models/SSFanLarge": "examplemod:models/SSFanLarge"
+    },
+    "model": "examplemod:SSFanLarge2.ogex",
+    "custom": {
+      "mesh": ["SSLargeFan_Chasis", "SSLargeFan_Rotor"]
+    }
+  },
+  "variants": {
+    "normal": [{}],
+    "inventory": [{
+      "transform": "forge:default-block"
+    }],
+    "facing": {
+      "down":  { "transform": { "rotation": { "x": 90  } } },
+      "up":    { "transform": { "rotation": { "x": 270 } } },
+      "north": { "transform": { "rotation": { "y": 180 } } },
+      "south": { "transform": "identity"                   },
+      "west":  { "transform": { "rotation": { "y": 90  } } },
+      "east":  { "transform": { "rotation": { "y": 270 } } }
+    },
+    "static": {
+      "true": {
+        "custom": {
+            "mesh": ["SSLargeFan_Chasis"]
+        }
+      },
+      "false": {
+        "custom": {
+            "mesh": ["SSLargeFan_Rotor"]
+        }
+      }
+    },
+    "entity": [{
+    }]
+  }
+}

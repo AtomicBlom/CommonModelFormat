@@ -66,7 +66,8 @@ public class Node<K extends IKind<K>> {
     private ImmutableMap<String, Node<?>> buildNodeMap(List<Node<?>> nodes) {
         Builder<String, Node<?>> builder = ImmutableMap.builder();
         for (Node<?> node : nodes) {
-            builder.put(node.getName(), node);
+            final String name = node.getName();
+            builder.put(name, node);
         }
         return builder.build();
     }

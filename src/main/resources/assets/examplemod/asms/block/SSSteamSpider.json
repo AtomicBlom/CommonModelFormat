@@ -1,0 +1,19 @@
+{
+  "parameters": {
+    "length": 1.66667,
+    "end_anim": [ "compose", [ "+", "#length" ] , "#click_time" ],
+    "trigger_anim": [ "-", "#end_anim" ],
+    "progress": [ "-/", "#click_time", "#length" ],
+    "speed": 1
+  },
+  "clips": {
+    "model": "examplemod:block/SSFanLarge.ogex@main",
+    "main": [ "apply", "#model", ["/f", 2, 1.66667] ]
+  },
+  "states": [
+    "main"
+  ],
+  "transitions": {
+  },
+  "start_state": "main"
+}

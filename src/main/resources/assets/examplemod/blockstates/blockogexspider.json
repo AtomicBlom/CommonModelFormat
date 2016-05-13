@@ -16,18 +16,19 @@
       "transform": "forge:default-block"
     }],
     "facing": {
-      "down":  { "transform": { "rotation": { "x": 90  } } },
-      "up":    { "transform": { "rotation": { "x": 270 } } },
-      "north": { "transform": { "rotation": { "y": 180 } } },
-      "south": { "transform": "identity"                   },
-      "west":  { "transform": { "rotation": { "y": 90  }, "translation": [0, 2, 0] } },
-      "east":  { "transform": { "rotation": { "y": 270 } } }
+      "down":  {},
+      "up":    {},
+      "north": {},
+      "south": {},
+      "west":  {},
+      "east":  {}
     },
     "static": {
       "true": {
         "model": "builtin/generated"
       },
       "false": {
+        "transform": { "translation": [1, 0.5, 1], "scale": 2 },
         "custom": {
             "mesh": ["SSLargeFan_Rotor"]
         }

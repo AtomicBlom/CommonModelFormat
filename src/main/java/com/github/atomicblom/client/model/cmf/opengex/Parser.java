@@ -9,6 +9,8 @@ import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.Compo
 import com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.XyzTranslation;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.*;
 import com.github.atomicblom.client.model.cmf.common.*;
 import com.github.atomicblom.client.model.cmf.opengex.ogex.*;
@@ -114,6 +116,19 @@ class Parser {
         }
     }
 
+    TRSRTransformation combineTransforms(Iterable<OgexTransform> transforms)
+    {
+        Matrix4f m = new Matrix4f(), t = new Matrix4f();
+        m.set(upMatrix);
+        for(OgexTransform transform : transforms)
+        {
+            t.set(transform.toMatrix());
+            m.mul(t);
+        }
+        m.mul(upMatrixInverted);
+        return new TRSRTransformation(m);
+    }
+
     @SuppressWarnings("ChainOfInstanceofChecks")
     private Node<?> createNode(OpenGEXNode openGEXNode) {
         if (openGEXNode instanceof OgexCameraNode) {
@@ -123,18 +138,10 @@ class Parser {
             return null;
         }
 
-        final List<Node<?>> childNodes = Lists.newArrayList();
-        for (final OgexNode childOgexNode : openGEXNode) {
-            final Node<?> childNode = createNode(childOgexNode);
-            if (childNode != null) {
-                childNodes.add(childNode);
-            }
-        }
-
         TRSRTransformation globalTrsr = TRSRTransformation.identity();
         TRSRTransformation objectTrsr = TRSRTransformation.identity();
         String name = "";
-        Function<? super Node<?>, ? extends IAnimation> animFactory = null;
+        Function<? super Node<?>, ? extends IAnimation> animFactoryGlobal = null, animFactoryObject = null;
 
         boolean hasObjectOnly = false;
 
@@ -145,23 +152,19 @@ class Parser {
             final Matrix4f objectOnlyTransformations = new Matrix4f();
             objectOnlyTransformations.setIdentity();
 
-            final Matrix4f transform = new Matrix4f();
-            for (final OgexTransform ogexTransform : ogexNode.getTransforms()) {
-                transform.set(ogexTransform.toMatrix());
-                transform.mul(upMatrix, transform);
-                transform.mul(upMatrixInverted);
-
-                if (ogexTransform.isObjectOnly()) {
-                    hasObjectOnly = true;
-                    objectOnlyTransformations.mul(transform);
-                } else
+            Predicate<OgexTransform> isObjectOnly = new Predicate<OgexTransform>()
+            {
+                public boolean apply(OgexTransform transform)
                 {
-                    actualNodeTransformation.mul(transform);
+                    return transform.isObjectOnly();
                 }
-            }
-            //TODO: Are these transformations assigned to the right children?
-            globalTrsr = new TRSRTransformation(actualNodeTransformation);
-            objectTrsr = new TRSRTransformation(objectOnlyTransformations);
+            };
+            Iterable<OgexTransform> globalTransforms = Iterables.filter(ogexNode.getTransforms(), Predicates.not(isObjectOnly));
+            Iterable<OgexTransform> objectTransforms = Iterables.filter(ogexNode.getTransforms(), isObjectOnly);
+            hasObjectOnly = objectTransforms.iterator().hasNext();
+
+            globalTrsr = combineTransforms(globalTransforms);
+            objectTrsr = combineTransforms(objectTransforms);
 
             name = ogexNode.getName();
 
@@ -172,7 +175,19 @@ class Parser {
             // FIXME more than 1 clip
             if(!ogexNode.getAnimations().isEmpty()) {
                 final OgexAnimation ogexAnimation = ogexNode.getAnimations().iterator().next();
-                animFactory = Functions.constant(new OpenGEXAnimation(ogexNode.getTransforms(), ogexAnimation, upMatrix));
+                animFactoryGlobal = Functions.constant(new OpenGEXAnimation(globalTransforms, ogexAnimation, upMatrix));
+                if(hasObjectOnly)
+                {
+                    animFactoryObject = Functions.constant(new OpenGEXAnimation(objectTransforms, ogexAnimation, upMatrix));
+                }
+            }
+        }
+
+        final List<Node<?>> childNodes = Lists.newArrayList();
+        for (final OgexNode childOgexNode : openGEXNode) {
+            final Node<?> childNode = createNode(childOgexNode);
+            if (childNode != null) {
+                childNodes.add(childNode);
             }
         }
 
@@ -207,14 +222,14 @@ class Parser {
             }
         }
 
-        //FIXME: It's entirely possible that an object-only element has an animation against it. The animation will need to be split up if this ever occurs.
+        //FIXME: It's entirely possible that an object-only element has an animation against it. The animation will need to be applied somehow if this ever occurs.
         if (hasObjectOnly) {
             childNodes.add(Node.create(name, objectTrsr, ImmutableList.<Node<?>>of(), kind, null, false));
             name += "-Auto-ObjectOnlySeperator";
             kind = new Pivot();
         }
 
-        Node<?> node = Node.create(name, globalTrsr, childNodes, kind, animFactory, false);
+        Node<?> node = Node.create(name, globalTrsr, childNodes, kind, animFactoryGlobal, false);
         return node;
     }
 
@@ -590,7 +605,6 @@ class Parser {
         BrushContents(Brush brush, MeshType type)
         {
             this.brush = brush;
-
             this.type = type;
         }
 

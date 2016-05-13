@@ -38,6 +38,7 @@ package com.github.atomicblom.client.model.cmf.opengex.ogex;
 
 import java.io.*;
 import java.util.*;
+import com.google.common.base.Objects;
 
 import com.github.atomicblom.client.model.cmf.opengex.oddl.BaseStructure;
 import com.github.atomicblom.client.model.cmf.opengex.oddl.DataStructure;
@@ -739,11 +740,10 @@ public class OgexParser {
         result = new OgexMatrixTransform();        
         index.put(ds, result);
 
-        Object object = ds.getProperty("object");
-        if( object instanceof Boolean && (Boolean)object) {
+        if( Objects.equal(true, ds.getProperty("object")) ) {
             result.setObjectOnly(true);
         }
-        
+
         float[][] array =  (float[][])ds.getData();
         if( array.length != 1 ) {
             throw new RuntimeException("Unexpected outer array length:" + array.length + ", from:" + ds.location());
@@ -774,8 +774,8 @@ public class OgexParser {
         Object value = ds.getValue();
         
         result = OgexRotation.create(kind, value);
-        
-        if( "true".equals(ds.getProperty("object")) ) {
+
+        if( Objects.equal(true, ds.getProperty("object")) ) {
             result.setObjectOnly(true);
         } 
         
@@ -805,8 +805,8 @@ public class OgexParser {
         Object value = ds.getValue();
                 
         result = OgexScale.create(kind, value);
-        
-        if( "true".equals(ds.getProperty("object")) ) {
+
+        if( Objects.equal(true, ds.getProperty("object")) ) {
             result.setObjectOnly(true);
         } 
         
@@ -836,8 +836,8 @@ public class OgexParser {
         Object value = ds.getValue();
         
         result = OgexTranslation.create(kind, value);
-        
-        if( "true".equals(ds.getProperty("object")) ) {
+
+        if( Objects.equal(true, ds.getProperty("object")) ) {
             result.setObjectOnly(true);
         } 
         

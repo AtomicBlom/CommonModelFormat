@@ -235,10 +235,19 @@ public class BakedWrapper implements IPerspectiveAwareModel
                     .maximumSize(32)
                     .build(new CacheLoader<Node<?>, TRSRTransformation>()
                     {
+                        // TODO: cache getPose somewhere too
+                        private TRSRTransformation getPose(Node<?> node)
+                        {
+                            if(node.getParent() != null)
+                            {
+                                return getPose(node.getParent()).compose(node.getTransformation());
+                            }
+                            return node.getTransformation();
+                        }
                         @Override
                         public TRSRTransformation load(Node<?> node) throws Exception
                         {
-                            return state.apply(Optional.of(new NodeJoint(node))).or(TRSRTransformation.identity());
+                            return state.apply(Optional.of(new NodeJoint(node))).or(getPose(node));
                         }
                     });
 

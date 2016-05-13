@@ -4,7 +4,7 @@
     "textures": {
       "//D/The Forge/Minecraft/SteamNSteel/Models/SSFanLarge": "examplemod:models/SSFanLarge"
     },
-    "model": "examplemod:SSFanLarge2.ogex",
+    "model": "examplemod:SSFanLarge.ogex",
     "custom": {
       "mesh": ["SSLargeFan_Chasis", "SSLargeFan_Rotor"]
     }

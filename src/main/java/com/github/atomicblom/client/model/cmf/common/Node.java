@@ -107,13 +107,6 @@ public class Node<K extends IKind<K>> {
                 return joint.getInvBindPose();
             }
         }
-        TRSRTransformation pose = transformation.inverse();
-
-        if (parent != null)
-        {
-            TRSRTransformation parentTr = parent.getInvBindPose();
-            pose = pose.compose(parentTr);
-        }
-        return pose;
+        return TRSRTransformation.identity();
     }
 }

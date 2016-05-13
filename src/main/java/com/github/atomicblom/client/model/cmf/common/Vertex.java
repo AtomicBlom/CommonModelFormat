@@ -1,7 +1,6 @@
 package com.github.atomicblom.client.model.cmf.common;
 
 import com.google.common.base.Function;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,12 +32,12 @@ public class Vertex {
         if (mesh.getWeightMap().get(this).isEmpty()) {
             t.set(animator.apply(mesh.getParent()));
         } else {
-            for (BoneWeight boneWeight : mesh.getWeightMap().get(this)) {
-                totalWeight += boneWeight.getWeight();
-                Matrix4f bm = animator.apply(boneWeight.getBoneNode());
-                bm.mul(boneWeight.getWeight());
+            for (JointWeight jointWeight : mesh.getWeightMap().get(this)) {
+                totalWeight += jointWeight.getWeight();
+                Matrix4f jointmatrix = animator.apply(jointWeight.getJointNode());
+                jointmatrix.mul(jointWeight.getWeight());
 
-                t.add(bm);
+                t.add(jointmatrix);
             }
             if (Math.abs(totalWeight) > 1e-4) t.mul(1f / totalWeight);
             else t.setIdentity();

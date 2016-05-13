@@ -98,7 +98,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
         }
         boolean boneDebugging = true;
 
-        if (node.getKind() instanceof Bone && boneDebugging) {
+        if (node.getKind() instanceof Joint && boneDebugging) {
             // pose from .getInvBindPose, red
             TRSRTransformation pose = node.getInvBindPose().inverse();
             ImmutableList<Face> staticFaces = buildJointFaces(jointDebugBrush, pose, 1, 0, 0, null, null);
@@ -114,17 +114,17 @@ public class BakedWrapper implements IPerspectiveAwareModel
             ImmutableList<Face> staticFaces2 = buildJointFaces(jointDebugBrush, forwardPose, 0, 0, 1, null, null);
 
             // deformable joints, green
-            ImmutableMultimap.Builder<Vertex, BoneWeight> weightBuilder = ImmutableMultimap.builder();
-            BoneWeight bw = new BoneWeight((Node<Bone>) node, 1f);
+            ImmutableMultimap.Builder<Vertex, JointWeight> weightBuilder = ImmutableMultimap.builder();
+            JointWeight jointWeight = new JointWeight((Node<Joint>) node, 1f);
 
-            ImmutableList<Face> dynamicFaces = buildJointFaces(jointDebugBrush, pose, 0, 1, 0, weightBuilder, bw);
+            ImmutableList<Face> dynamicFaces = buildJointFaces(jointDebugBrush, pose, 0, 1, 0, weightBuilder, jointWeight);
             ImmutableList<Face> dynamicBoneFaces = buildBoneFaces(jointDebugBrush, node, 0, 1, 0, weightBuilder);
 
             Mesh mesh = new Mesh(jointDebugBrush, ImmutableList.copyOf(Iterables.concat(staticFaces, staticBoneFaces, staticFaces2, dynamicFaces, dynamicBoneFaces)));
             // setting dummy mesh node
             Node.create("DummyBoneMeshNode", TRSRTransformation.identity(), ImmutableList.<Node<?>>of(), mesh, null, false);
             mesh.setWeightMap(weightBuilder.build());
-            mesh.setBones(ImmutableSet.of((Node<Bone>) node));
+            mesh.setJoints(ImmutableSet.of((Node<Joint>) node));
             buildMesh(builder, state, mesh);
         }
 
@@ -163,7 +163,7 @@ public class BakedWrapper implements IPerspectiveAwareModel
 
     }
 
-    private ImmutableList<Face> buildJointFaces(Brush brush, TRSRTransformation pose, float r, float g, float b, ImmutableMultimap.Builder<Vertex, BoneWeight> weightBuilder, BoneWeight bw)
+    private ImmutableList<Face> buildJointFaces(Brush brush, TRSRTransformation pose, float r, float g, float b, ImmutableMultimap.Builder<Vertex, JointWeight> weightBuilder, JointWeight bw)
     {
         ImmutableList.Builder<Face> faceBuilder = ImmutableList.builder();
         Matrix4f pm = pose.compose(new TRSRTransformation(null, null, new Vector3f(.1f, .1f, .1f), null)).getMatrix();
@@ -181,9 +181,9 @@ public class BakedWrapper implements IPerspectiveAwareModel
         return faceBuilder.build();
     }
 
-    private ImmutableList<Face> buildBoneFaces(Brush brush, Node<?> node, float r, float g, float b, ImmutableMultimap.Builder<Vertex, BoneWeight> weightBuilder)
+    private ImmutableList<Face> buildBoneFaces(Brush brush, Node<?> node, float r, float g, float b, ImmutableMultimap.Builder<Vertex, JointWeight> weightBuilder)
     {
-        if(!(node.getParent().getKind() instanceof Bone))
+        if(!(node.getParent().getKind() instanceof Joint))
         {
             return ImmutableList.of();
         }
@@ -206,10 +206,10 @@ public class BakedWrapper implements IPerspectiveAwareModel
         rot.set(new AxisAngle4f(axis, angle));
         TRSRTransformation local = new TRSRTransformation(null, rot, new Vector3f(scale, scale, scale), null);
         Matrix4f global = poseStart.compose(local).compose(new TRSRTransformation(new Vector3f(0, .5f, 0), null, new Vector3f(.1f, .5f, .1f), null)).getMatrix();
-        BoneWeight bs = new BoneWeight((Node<Bone>)(node.getParent()), 1f);
-        BoneWeight bsm = new BoneWeight((Node<Bone>)(node.getParent()), .5f);
-        BoneWeight bem = new BoneWeight((Node<Bone>)node, .5f);
-        BoneWeight be = new BoneWeight((Node<Bone>)node, 1f);
+        JointWeight bs = new JointWeight((Node<Joint>)(node.getParent()), 1f);
+        JointWeight bsm = new JointWeight((Node<Joint>)(node.getParent()), .5f);
+        JointWeight bem = new JointWeight((Node<Joint>)node, .5f);
+        JointWeight be = new JointWeight((Node<Joint>)node, 1f);
         for(int i = 0; i < 8; i++)
         {
             Face face = makeOctahedronFace(brush, global, i, r, g, b);

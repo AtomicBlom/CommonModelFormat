@@ -12,7 +12,6 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import javax.vecmath.Quat4f;
 import javax.vecmath.Vector2f;
 import javax.vecmath.Vector3f;
@@ -443,10 +442,10 @@ public class Parser
             final Mesh meshKind = new Mesh(mesh.getLeft(), mesh.getRight());
             Node<Mesh> mNode = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, meshKind, animFactory, true);
 
-            ImmutableMultimap.Builder<Vertex, BoneWeight> builder = ImmutableMultimap.builder();
-            for (Node<Bone> childBone : meshKind.getBones()) {
+            ImmutableMultimap.Builder<Vertex, JointWeight> builder = ImmutableMultimap.builder();
+            for (Node<Joint> childBone : meshKind.getJoints()) {
                 for (VertexWeight b : childBone.getKind().getData()) {
-                    builder.put(b.getVertex(), new BoneWeight(childBone, b.getWeight()));
+                    builder.put(b.getVertex(), new JointWeight(childBone, b.getWeight()));
                 }
             }
 
@@ -455,7 +454,7 @@ public class Parser
             meshes.put(name, mNode);
             node = mNode;
         }
-        else if(bone != null) node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Bone(bone), animFactory, true);
+        else if(bone != null) node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Joint(bone), animFactory, true);
         else node = Node.create(name, new TRSRTransformation(pos, rot, scale, null), nodes, new Pivot(), animFactory, true);
         if(animData == null)
         {

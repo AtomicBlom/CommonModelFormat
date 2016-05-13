@@ -1,19 +1,10 @@
 package com.github.atomicblom.client.model.cmf.common;
 
-import com.github.atomicblom.client.model.cmf.b3d.B3DAnimation;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.ImmutableTable;
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
 import net.minecraftforge.common.model.TRSRTransformation;
-import org.apache.commons.lang3.tuple.Triple;
 
-import javax.vecmath.Matrix4f;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 
 public class Node<K extends IKind<K>> {
@@ -108,12 +99,12 @@ public class Node<K extends IKind<K>> {
 
     public TRSRTransformation getInvBindPose()
     {
-        if(kind instanceof Bone)
+        if(kind instanceof Joint)
         {
-            Bone bone = (Bone) kind;
-            if(bone.getInvBindPose() != null)
+            Joint joint = (Joint) kind;
+            if(joint.getInvBindPose() != null)
             {
-                return bone.getInvBindPose();
+                return joint.getInvBindPose();
             }
         }
         TRSRTransformation pose = transformation.inverse();

@@ -41,9 +41,9 @@ class Parser {
     }
 
     private final Map<OgexMaterial, Brush> brushes = Maps.newHashMap();
-    private final Map<OgexBoneNode, Bone> ogexBoneToForgeBoneMap = Maps.newHashMap();
+    private final Map<OgexBoneNode, Joint> ogexBoneToJointMap = Maps.newHashMap();
     private final List<Texture> textures = Lists.newArrayList();
-    private final Queue<UnprocessedMeshBoneMapEntry> meshBoneMapQueue = Lists.newLinkedList();
+    private final Queue<UnprocessedMeshJointMapEntry> meshJointMapQueue = Lists.newLinkedList();
 
     Model parse() throws IOException {
         final OgexParser ogexParser = new OgexParser();
@@ -57,7 +57,7 @@ class Parser {
         getBrushes(ogexScene);
         final Node<?> rootNode = createNode(ogexScene);
 
-        processMeshBoneMapQueue();
+        processMeshJointQueue();
 
         //Meshes is not currently used.
         Model model = new Model(textures, brushes.values(), rootNode);
@@ -83,34 +83,34 @@ class Parser {
         return upMatrix;
     }
 
-    private void processMeshBoneMapQueue()
+    private void processMeshJointQueue()
     {
-        for (final UnprocessedMeshBoneMapEntry meshBoneMapEntry : meshBoneMapQueue)
+        for (final UnprocessedMeshJointMapEntry meshJointMapEntry : meshJointMapQueue)
         {
-            final Mesh mesh = meshBoneMapEntry.mesh;
-            final Builder<Vertex, BoneWeight> boneWeightMapBuilder = ImmutableMultimap.builder();
-            final Set<Node<Bone>> bonesUsed = Sets.newHashSet();
+            final Mesh mesh = meshJointMapEntry.mesh;
+            final Builder<Vertex, JointWeight> jointWeightMapBuilder = ImmutableMultimap.builder();
+            final Set<Node<Joint>> jointsUsed = Sets.newHashSet();
 
-            for (final Vertex vertex : meshBoneMapEntry.getVertices())
+            for (final Vertex vertex : meshJointMapEntry.getVertices())
             {
-                for (final BoneWeightPose boneWeightPose : meshBoneMapEntry.getBoneWeightPose(vertex))
+                for (final JointWeightPose jointWeightPose : meshJointMapEntry.getJointWeightPose(vertex))
                 {
-                    final OgexBoneNode ogexBoneNode = boneWeightPose.ogexBoneNode;
-                    final TRSRTransformation invBindPose = boneWeightPose.invertedBindPose;
+                    final OgexBoneNode ogexBoneNode = jointWeightPose.ogexBoneNode;
+                    final TRSRTransformation invBindPose = jointWeightPose.invertedBindPose;
 
-                    final Node<Bone> boneNode = ogexBoneToForgeBoneMap.get(ogexBoneNode).getParent();
-                    boneNode.getKind().getData().add(new VertexWeight(vertex, boneWeightPose.weight));
+                    final Node<Joint> jointNode = ogexBoneToJointMap.get(ogexBoneNode).getParent();
+                    jointNode.getKind().getData().add(new VertexWeight(vertex, jointWeightPose.weight));
                     // TODO check if bone instance can be shared with multiple inv bind poses, and make a copy if true
-                    boneNode.getKind().setInvBindPose(invBindPose);
-                    boneWeightMapBuilder.put(vertex, new BoneWeight(boneNode, boneWeightPose.weight));
-                    if (!bonesUsed.contains(boneNode))
+                    jointNode.getKind().setInvBindPose(invBindPose);
+                    jointWeightMapBuilder.put(vertex, new JointWeight(jointNode, jointWeightPose.weight));
+                    if (!jointsUsed.contains(jointNode))
                     {
-                        bonesUsed.add(boneNode);
+                        jointsUsed.add(jointNode);
                     }
                 }
             }
-            mesh.setBones(bonesUsed);
-            mesh.setWeightMap(boneWeightMapBuilder.build());
+            mesh.setJoints(jointsUsed);
+            mesh.setWeightMap(jointWeightMapBuilder.build());
         }
     }
 
@@ -198,9 +198,9 @@ class Parser {
             if (openGEXNode instanceof OgexBoneNode)
             {
                 final OgexBoneNode ogexBoneNode = (OgexBoneNode) openGEXNode;
-                final Bone bone = new Bone();
-                ogexBoneToForgeBoneMap.put(ogexBoneNode, bone);
-                kind = bone;
+                final Joint joint = new Joint();
+                ogexBoneToJointMap.put(ogexBoneNode, joint);
+                kind = joint;
             } else
             {
                 kind = new Pivot();
@@ -229,7 +229,7 @@ class Parser {
         }
 
         final OgexSkin skin = ogexMesh.getSkin();
-        final int[] boneIndexTransform = getBoneIndexTransformation(skin);
+        final int[] boneIndexTransformation = getBoneIndexTransformation(skin);
 
         final List<Brush> brushList = getBrushesForGeometryNode(ogexGeometryNode);
 
@@ -254,7 +254,7 @@ class Parser {
             }
             final BrushContents brushContents = listToBuild.get(brush);
 
-            processPartialMesh(ogexMesh, boneIndexTransform, indexArray, brushContents);
+            processPartialMesh(ogexMesh, boneIndexTransformation, indexArray, brushContents);
         }
 
         for (final Entry<Brush, BrushContents> brushPairEntry : listToBuild.entrySet())
@@ -263,7 +263,7 @@ class Parser {
 
             final Mesh mesh = new Mesh(brushPairEntry.getKey(), brushContents.faces);
 
-            meshBoneMapQueue.add(new UnprocessedMeshBoneMapEntry(mesh, brushContents.getVertexWeights()));
+            meshJointMapQueue.add(new UnprocessedMeshJointMapEntry(mesh, brushContents.getVertexWeights()));
 
             meshes.add(mesh);
         }
@@ -271,7 +271,7 @@ class Parser {
         return meshes;
     }
 
-    private void processPartialMesh(OgexMesh ogexMesh, int[] boneIndexTransform, OgexIndexArray indexArray, BrushContents brushContents)
+    private void processPartialMesh(OgexMesh ogexMesh, int[] jointIndexTransform, OgexIndexArray indexArray, BrushContents brushContents)
     {
         final OgexSkin skin = ogexMesh.getSkin();
         for (final long[] polyGroup : (long[][]) indexArray.getArray())
@@ -288,13 +288,13 @@ class Parser {
 
                 if (skin != null) {
                     final int boneCount = skin.getBoneCount().asIntArray()[vertexIndex];
-                    final int startingBoneIndex = boneIndexTransform[vertexIndex];
+                    final int startingBoneIndex = jointIndexTransform[vertexIndex];
 
                     for (int boneOffset = 0; boneOffset < boneCount; ++boneOffset) {
                         final int boneIndex = skin.getBoneIndex().asIntArray()[startingBoneIndex + boneOffset];
 
                         final OgexBoneNode ogexNode = (OgexBoneNode)skin.getSkeleton().getBoneNodes()[boneIndex];
-                        final float boneWeight = skin.getBoneWeight()[startingBoneIndex + boneOffset];
+                        final float jointWeight = skin.getBoneWeight()[startingBoneIndex + boneOffset];
 
                         final Matrix4f poseTranformation = new Matrix4f(skin.getSkeleton().getTransforms()[boneIndex]);
                         poseTranformation.transpose();
@@ -302,8 +302,8 @@ class Parser {
                         poseTranformation.mul(upMatrix, poseTranformation);
                         poseTranformation.mul(upMatrixInverted);
 
-                        final BoneWeightPose boneWeightPose = new BoneWeightPose(boneWeight, ogexNode, poseTranformation);
-                        brushContents.addBoneWeightPoseToVertex(vertices[i], boneWeightPose);
+                        final JointWeightPose jointWeightPose = new JointWeightPose(jointWeight, ogexNode, poseTranformation);
+                        brushContents.addJointWeightPoseToVertex(vertices[i], jointWeightPose);
                     }
                 }
             }
@@ -546,13 +546,13 @@ class Parser {
     }
 
     @SuppressWarnings("ClassHasNoToStringMethod")
-    private static class BoneWeightPose
+    private static class JointWeightPose
     {
         private final Float weight;
         private final OgexBoneNode ogexBoneNode;
         private final TRSRTransformation invertedBindPose;
 
-        private BoneWeightPose(Float weight, OgexBoneNode ogexBoneNode, Matrix4f invertedBindPose) {
+        private JointWeightPose(Float weight, OgexBoneNode ogexBoneNode, Matrix4f invertedBindPose) {
             this.weight = weight;
             this.ogexBoneNode = ogexBoneNode;
             this.invertedBindPose = new TRSRTransformation(invertedBindPose);
@@ -560,11 +560,11 @@ class Parser {
     }
 
     @SuppressWarnings("ClassHasNoToStringMethod")
-    private static class UnprocessedMeshBoneMapEntry {
+    private static class UnprocessedMeshJointMapEntry {
         private final Mesh mesh;
-        private final Multimap<Vertex, BoneWeightPose> verticesToProcess;
+        private final Multimap<Vertex, JointWeightPose> verticesToProcess;
 
-        UnprocessedMeshBoneMapEntry(Mesh mesh, Multimap<Vertex, BoneWeightPose> verticesToProcess) {
+        UnprocessedMeshJointMapEntry(Mesh mesh, Multimap<Vertex, JointWeightPose> verticesToProcess) {
 
             this.mesh = mesh;
             this.verticesToProcess = verticesToProcess;
@@ -574,7 +574,7 @@ class Parser {
             return verticesToProcess.keySet();
         }
 
-        Iterable<BoneWeightPose> getBoneWeightPose(Vertex vertex)
+        Iterable<JointWeightPose> getJointWeightPose(Vertex vertex)
         {
             return verticesToProcess.get(vertex);
         }
@@ -583,7 +583,7 @@ class Parser {
     private static class BrushContents
     {
         private final List<Face> faces = Lists.newArrayList();
-        private final Builder<Vertex, BoneWeightPose> vertexWeights = ImmutableMultimap.builder();
+        private final Builder<Vertex, JointWeightPose> vertexWeights = ImmutableMultimap.builder();
         private final Brush brush;
         private final MeshType type;
 
@@ -607,12 +607,12 @@ class Parser {
             faces.add(face);
         }
 
-        void addBoneWeightPoseToVertex(Vertex vertex, BoneWeightPose boneWeightPose)
+        void addJointWeightPoseToVertex(Vertex vertex, JointWeightPose jointWeightPose)
         {
-            vertexWeights.put(vertex, boneWeightPose);
+            vertexWeights.put(vertex, jointWeightPose);
         }
 
-        Multimap<Vertex, BoneWeightPose> getVertexWeights() {
+        Multimap<Vertex, JointWeightPose> getVertexWeights() {
             return vertexWeights.build();
         }
     }

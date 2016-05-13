@@ -4,7 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.vecmath.Matrix4f;
 import java.util.*;
@@ -14,16 +13,16 @@ public class Mesh implements IKind<Mesh> {
     private final Brush brush;
     private final ImmutableList<Face> faces;
 
-    private Set<Node<Bone>> bones = new HashSet<Node<Bone>>();
+    private Set<Node<Joint>> joints = new HashSet<Node<Joint>>();
 
-    private ImmutableMultimap<Vertex, BoneWeight> weightMap = ImmutableMultimap.of();
+    private ImmutableMultimap<Vertex, JointWeight> weightMap = ImmutableMultimap.of();
 
     public Mesh(Brush brush, List<Face> faces) {
         this.brush = brush;
         this.faces = ImmutableList.copyOf(faces);
     }
 
-    public ImmutableMultimap<Vertex, BoneWeight> getWeightMap() {
+    public ImmutableMultimap<Vertex, JointWeight> getWeightMap() {
         return weightMap;
     }
 
@@ -46,11 +45,11 @@ public class Mesh implements IKind<Mesh> {
         return faces;
     }
 
-    public ImmutableSet<Node<Bone>> getBones() {
-        return ImmutableSet.copyOf(bones);
+    public ImmutableSet<Node<Joint>> getJoints() {
+        return ImmutableSet.copyOf(joints);
     }
-    public void setBones(Set<Node<Bone>> bones) {
-        this.bones = bones;
+    public void setJoints(Set<Node<Joint>> joints) {
+        this.joints = joints;
     }
 
     @Override
@@ -58,7 +57,7 @@ public class Mesh implements IKind<Mesh> {
         return String.format("Mesh [pivot=%s, brush=%s, data=...]", super.toString(), brush);
     }
 
-    public void setWeightMap(ImmutableMultimap<Vertex, BoneWeight> weightMap) {
+    public void setWeightMap(ImmutableMultimap<Vertex, JointWeight> weightMap) {
         this.weightMap = weightMap;
     }
 
@@ -69,8 +68,8 @@ public class Mesh implements IKind<Mesh> {
         Deque<Node<?>> queue = new ArrayDeque<Node<?>>(parent.getNodes().values());
         while (!queue.isEmpty()) {
             Node<?> node = queue.pop();
-            if (node.getKind() instanceof Bone) {
-                bones.add((Node<Bone>) node);
+            if (node.getKind() instanceof Joint) {
+                joints.add((Node<Joint>) node);
                 queue.addAll(node.getNodes().values());
             }
         }

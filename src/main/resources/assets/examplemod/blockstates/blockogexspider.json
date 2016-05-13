@@ -2,7 +2,8 @@
   "forge_marker": 1,
   "defaults": {
     "textures": {
-      "SSSteamSpider": "examplemod:models/SSSteamSpider"
+      "SSSteamSpider": "examplemod:models/SSSteamSpider",
+      "//D/The Forge/Minecraft/SteamNSteel/Models/Entities/SSSteamSpider": "examplemod:models/SSSteamSpider"
     },
     "model": "examplemod:SSSteamSpider.ogex",
     "custom": {

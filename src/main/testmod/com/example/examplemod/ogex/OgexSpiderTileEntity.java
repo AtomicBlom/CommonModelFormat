@@ -49,17 +49,18 @@ public class OgexSpiderTileEntity extends AnimationTileEntityBase
     {
         if (getAsm() != null)
         {
-            if (sneaking)
-            {
-                cycleLength.setValue(6 - cycleLength.apply(0));
-            } else if (getAsm().currentState().equals("stopped"))
+            if (sneaking && getAsm().currentState().equals("idle"))
             {
                 clickStart.setValue(Animation.getWorldTime(getWorld()));
-                getAsm().transition("start_walking");
+                getAsm().transition("attack_leap");
+            } else if (getAsm().currentState().equals("idle"))
+            {
+                clickStart.setValue(Animation.getWorldTime(getWorld()));
+                getAsm().transition("walk_start");
             } else if (getAsm().currentState().equals("walk_loop"))
             {
                 clickEnd.setValue(Animation.getWorldTime(getWorld()));
-                getAsm().transition("walk_loop_end");
+                getAsm().transition("walk_loop_last");
             }
         }
     }

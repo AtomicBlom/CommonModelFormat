@@ -44,6 +44,8 @@ minecraft {
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
 }
 
+sourceSets.main.java.srcDirs += 'src/main/testmod'
+
 jar {
     classifier = 'api'
 }

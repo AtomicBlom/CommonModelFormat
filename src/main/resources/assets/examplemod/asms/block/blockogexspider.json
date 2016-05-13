@@ -5,60 +5,83 @@
 
   "parameters": {
     "fps": 30,
-    "starting_length": 10,
-    "walk_length": 10,
-    "stopping_length": 10,
+    "walk_start": 0,
+    "walk_loop": 10,
+    "walk_stop": 22,
+    "attack_steam": 30,
+    "attack_steam_stop": 55,
+    "attack_leap": 70,
+    "end": 96,
 
-    "click_start_frames": [ "compose", [ "*", "#fps" ], "#click_start" ],
-    "since_click_start": [ "-*", "#click_start", "#fps" ],
-    "since_click_end": [ "-*", "#click_end", "#fps" ],
-    "next_cycle_end": [ "compose", [ "-*R+", "#click_start", "#fps", "#walk_length", "#click_start_frames"], "#click_end" ],
+    "start_length": [ "compose", [ "-", "#walk_start"  ], "#walk_loop" ],
+    "loop_length":  [ "compose", [ "-", "#walk_loop"   ], "#walk_stop" ],
+    "stop_length":  [ "compose", [ "-", "#walk_stop"   ], "#attack_steam" ],
+    "leap_length":  [ "compose", [ "-", "#attack_leap" ], "#end" ],
 
-    "starting_time": [ "compose", [ "m/", "#starting_length", "#fps" ], "#since_click_start" ],
-    "walk_time":     [ "compose", [ "-f+/", "#starting_length", "#walk_length", "#starting_length", "#fps" ], "#since_click_start" ],
-    "stopping_time": [ "*-m++/", "#fps", "#next_cycle_end", "#stopping_length", "#starting_length", "#walk_length", "#fps" ],
+    "speed": 0.25,
+    "mul": [ "compose", ["*", "#speed"], "#fps" ],
 
-    "end_starting_clip": [ "compose", [ "-", "#starting_length" ], "#since_click_start" ],
-    "end_walk_clip": [ "*-", "#fps", "#next_cycle_end" ],
-    "end_stopping_clip": [ "*--", "#fps", "#next_cycle_end", "#stopping_length" ]
+    "since_click_start": [ "-*", "#click_start", "#mul" ],
+    "frames_walking":       [ "compose", [ "-M*-", "#click_start", 0.1, "#mul", "#walk_loop" ], "#click_end" ],
+    "frames_walking_rounded": [ "compose", [ "R", "#loop_length" ], "#frames_walking" ],
+    "next_cycle_end":       [ "compose", [ "*++", "#mul", "#walk_loop", "#frames_walking_rounded" ], "#click_start" ],
+
+    "walk_start_time": [ "compose", [ "-m+/", "#walk_start", "#start_length", "#walk_start", "#fps" ], "#since_click_start" ],
+    "walk_loop_time":  [ "compose", [ "-f+/", "#walk_loop",  "#loop_length",  "#walk_loop",  "#fps" ], "#since_click_start" ],
+    "walk_stop_time":  [ "*-m+/", "#mul", "#next_cycle_end", "#stop_length", "#walk_stop", "#fps" ],
+
+    "attack_leap_time": [ "compose", [ "m+/", "#leap_length", "#attack_leap", "#fps" ], "#since_click_start" ],
+
+    "end_walk_start_clip":  [ "compose", [ "-", "#start_length" ], "#since_click_start" ],
+    "end_walk_loop_clip":   [ "*-",  "#mul", "#next_cycle_end" ],
+    "end_walk_stop_clip":   [ "*--", "#mul", "#next_cycle_end", "#stop_length" ],
+    "end_attack_leap_clip": [ "compose", [ "-", "#leap_length" ], "#since_click_start" ]
   },
   "clips": {
     "model": "examplemod:block/SSSteamSpider.ogex@main",
-    "stopped": [ "apply", "#model", 0 ],
-    "start_walking": [
+    "idle": [ "apply", "#model", 0 ],
+    "walk_start": [
       "trigger_positive",
-      [ "apply", "#model", "#starting_time" ],
-      "#end_starting_clip",
+      [ "apply", "#model", "#walk_start_time" ],
+      "#end_walk_start_clip",
       "!transition:walk_loop"
     ],
-    "walk_loop": [ "apply", "#model", "#walk_time"],
-    "walk_loop_end": [
+    "walk_loop": [ "apply", "#model", "#walk_loop_time"],
+    "walk_loop_last": [
       "trigger_positive",
       "#walk_loop",
-      "#end_walk_clip",
-      "!transition:stop_walking"
+      "#end_walk_loop_clip",
+      "!transition:walk_stop"
     ],
-    "stop_walking": [
+    "walk_stop": [
       "trigger_positive",
-      [ "apply", "#model", "#stopping_time" ],
-      "#end_stopping_clip",
-      "!transition:stopped"
+      [ "apply", "#model", "#walk_stop_time" ],
+      "#end_walk_stop_clip",
+      "!transition:idle"
+    ],
+    "attack_leap": [
+      "trigger_positive",
+      [ "apply", "#model", "#attack_leap_time" ],
+      "#end_attack_leap_clip",
+      "!transition:idle"
     ]
   },
 
   "states": [
-    "stopped",
-    "start_walking",
+    "idle",
+    "walk_start",
     "walk_loop",
-    "walk_loop_end",
-    "stop_walking"
+    "walk_loop_last",
+    "walk_stop",
+    "attack_leap"
   ],
   "transitions": {
-    "stopped": "start_walking",
-    "start_walking": "walk_loop",
-    "walk_loop": "walk_loop_end",
-    "walk_loop_end": "stop_walking",
-    "stop_walking": "stopped"
+    "idle": [ "walk_start", "attack_leap" ],
+    "walk_start": "walk_loop",
+    "walk_loop": "walk_loop_last",
+    "walk_loop_last": "walk_stop",
+    "walk_stop": "idle",
+    "attack_leap": "idle"
   },
-  "start_state": "stopped"
+  "start_state": "idle"
 }

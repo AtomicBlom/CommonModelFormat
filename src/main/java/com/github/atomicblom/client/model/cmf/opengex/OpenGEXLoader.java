@@ -71,8 +71,7 @@ public enum OpenGEXLoader implements ICustomModelLoader
                         resource = manager.getResource(new ResourceLocation(file.getResourceDomain(), "models/block/" + file.getResourcePath().substring("models/item/".length())));
                     else throw e;
                 }
-                Parser parser = new Parser(resource.getInputStream());
-                Model model = parser.parse();
+                Model model = Parser.parse(resource.getInputStream());
                 cache.put(file, model);
             }
             catch(IOException e)

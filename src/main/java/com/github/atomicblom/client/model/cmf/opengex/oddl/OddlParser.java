@@ -296,7 +296,7 @@ public class OddlParser {
                     in.error("Global name '" + name + "' is already used", in.lastPosition());
                 }
             } else {
-                // We add the indexes as we encounter them so that
+                // We createNode the indexes as we encounter them so that
                 // we can error right away on duplicate
                 if( !parent.addIndex(name, result) ) {
                     in.error("Local name '" + name + "' is already used", in.lastPosition());
@@ -368,7 +368,7 @@ public class OddlParser {
                     in.error("Global name '" + name + "' is already used", in.lastPosition());
                 }
             } else {
-                // We add the indexes as we encounter them so that
+                // We createNode the indexes as we encounter them so that
                 // we can error right away on duplicate
                 if( !parent.addIndex(name, result) ) {
                     in.error("Local name '" + name + "' is already used", in.lastPosition());

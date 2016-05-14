@@ -15,11 +15,11 @@ public class Node<K extends IKind<K>> {
     private final K kind;
     private Node<? extends IKind<?>> parent;
 
-    public static <K extends IKind<K>> Node<K> create(String name, TRSRTransformation transformation, List<Node<?>> nodes, K kind, Function<? super Node<?>, ? extends IAnimation> animFactory, boolean passAnimation) {
+    public static <K extends IKind<K>> Node<K> create(String name, TRSRTransformation transformation, Iterable<Node<?>> nodes, K kind, Function<? super Node<?>, ? extends IAnimation> animFactory, boolean passAnimation) {
         return new Node<K>(name, transformation, nodes, kind, animFactory, passAnimation);
     }
 
-    public Node(String name, TRSRTransformation transformation, List<Node<?>> nodes, K kind, Function<? super Node<?>, ? extends IAnimation> animFactory, boolean passAnimation) {
+    public Node(String name, TRSRTransformation transformation, Iterable<Node<?>> nodes, K kind, Function<? super Node<?>, ? extends IAnimation> animFactory, boolean passAnimation) {
         this.name = name;
         this.transformation = transformation;
         this.nodes = buildNodeMap(nodes);
@@ -54,7 +54,7 @@ public class Node<K extends IKind<K>> {
         }
     }
 
-    private ImmutableMap<String, Node<?>> buildNodeMap(List<Node<?>> nodes) {
+    private ImmutableMap<String, Node<?>> buildNodeMap(Iterable<Node<?>> nodes) {
         Builder<String, Node<?>> builder = ImmutableMap.builder();
         for (Node<?> node : nodes) {
             final String name = node.getName();

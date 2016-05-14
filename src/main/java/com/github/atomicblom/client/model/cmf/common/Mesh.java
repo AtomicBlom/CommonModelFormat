@@ -22,6 +22,11 @@ public class Mesh implements IKind<Mesh> {
         this.faces = ImmutableList.copyOf(faces);
     }
 
+    public Mesh(Brush brush, ImmutableList<Face> faces) {
+        this.brush = brush;
+        this.faces = faces;
+    }
+
     public ImmutableMultimap<Vertex, JointWeight> getWeightMap() {
         return weightMap;
     }

@@ -12,7 +12,7 @@ import javax.vecmath.Vector3f;
 
 import static com.github.atomicblom.client.model.cmf.opengex.ogex.OgexTranslation.Kind.X;
 
-class OpenGEXAnimation implements IAnimation
+public class OpenGEXAnimation implements IAnimation
 {
     private final ImmutableMap<OgexTransform, OgexTrack> tracks;
     private final ImmutableMap<OgexTransform, TRSRTransformation> transforms;

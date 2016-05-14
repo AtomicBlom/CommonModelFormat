@@ -18,7 +18,7 @@
     "stop_length":  [ "compose", [ "-", "#walk_stop"   ], "#attack_steam" ],
     "leap_length":  [ "compose", [ "-", "#attack_leap" ], "#end" ],
 
-    "speed": 0.4,
+    "speed": 1,
     "mul": [ "compose", ["*", "#speed"], "#fps" ],
 
     "since_click_start": [ "-*", "#click_start", "#mul" ],

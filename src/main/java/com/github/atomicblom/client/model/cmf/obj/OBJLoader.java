@@ -1,5 +1,6 @@
 package com.github.atomicblom.client.model.cmf.obj;
 
+import com.github.atomicblom.client.model.cmf.common.LoaderBase;
 import com.github.atomicblom.client.model.cmf.common.Model;
 import net.minecraft.client.resources.IResource;
 

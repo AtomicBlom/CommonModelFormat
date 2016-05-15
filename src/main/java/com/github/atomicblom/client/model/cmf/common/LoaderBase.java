@@ -1,4 +1,4 @@
-package com.github.atomicblom.client.model.cmf.obj;
+package com.github.atomicblom.client.model.cmf.common;
 
 import com.github.atomicblom.client.model.cmf.common.Mesh;
 import com.github.atomicblom.client.model.cmf.common.Model;
@@ -84,5 +84,5 @@ public abstract class LoaderBase implements ICustomModelLoader
         return new ModelWrapper(modelLocation, model, ImmutableSet.of(((Node<Mesh>)model.getRoot()).getName()), true, true, 1);
     }
 
-    protected abstract Model parseModel(IResource resource);
+    protected abstract Model parseModel(IResource resource) throws IOException;
 }

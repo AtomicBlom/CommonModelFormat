@@ -1,5 +1,8 @@
 package com.github.atomicblom.client.model.cmf.opengex;
 
+import com.github.atomicblom.client.model.cmf.b3d.*;
+import com.github.atomicblom.client.model.cmf.common.LoaderBase;
+import com.github.atomicblom.client.model.cmf.obj.OBJLoader;
 import com.google.common.collect.ImmutableSet;
 import com.github.atomicblom.client.model.cmf.common.Model;
 import com.github.atomicblom.client.model.cmf.common.Mesh;
@@ -22,75 +25,21 @@ import java.util.Set;
  * To enable for your mod call INSTANCE.addDomain(modid).
  * If you need more control over accepted resources - extend the class, and register a new INSTANCE with ModelLoaderRegistry.
  */
-public enum OpenGEXLoader implements ICustomModelLoader
+public class OpenGEXLoader extends LoaderBase
 {
-    INSTANCE;
+    public static OpenGEXLoader INSTANCE = new OpenGEXLoader();
+    private OpenGEXLoader() {}
 
-    private IResourceManager manager;
-
-    private final Set<String> enabledDomains = new HashSet<String>();
-    private final Map<ResourceLocation, Model> cache = new HashMap<ResourceLocation, Model>();
-
-    public void addDomain(String domain)
+    @Override
+    protected boolean canProcessResourcePath(String resourcePath)
     {
-        enabledDomains.add(domain.toLowerCase());
+        return resourcePath.endsWith(".ogex");
     }
 
     @Override
-    public void onResourceManagerReload(IResourceManager manager)
+    protected Model parseModel(IResource resource) throws IOException
     {
-        this.manager = manager;
-        cache.clear();
+        Parser parser = new Parser(resource.getInputStream());
+        return parser.parse();
     }
-
-    @Override
-    public boolean accepts(ResourceLocation modelLocation)
-    {
-        return enabledDomains.contains(modelLocation.getResourceDomain()) && modelLocation.getResourcePath().endsWith(".ogex");
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public IModel loadModel(ResourceLocation modelLocation) throws Exception
-    {
-        ResourceLocation file = new ResourceLocation(modelLocation.getResourceDomain(), modelLocation.getResourcePath());
-        if(!cache.containsKey(file))
-        {
-            try
-            {
-                IResource resource = null;
-                try
-                {
-                    resource = manager.getResource(file);
-                }
-                catch(FileNotFoundException e)
-                {
-                    if(modelLocation.getResourcePath().startsWith("models/block/"))
-                        resource = manager.getResource(new ResourceLocation(file.getResourceDomain(), "models/item/" + file.getResourcePath().substring("models/block/".length())));
-                    else if(modelLocation.getResourcePath().startsWith("models/item/"))
-                        resource = manager.getResource(new ResourceLocation(file.getResourceDomain(), "models/block/" + file.getResourcePath().substring("models/item/".length())));
-                    else throw e;
-                }
-                Parser parser = new Parser(resource.getInputStream());
-                Model model = parser.parse();
-                cache.put(file, model);
-            }
-            catch(IOException e)
-            {
-                cache.put(file, null);
-                throw e;
-            }
-            catch (OpenGEXException ex) {
-                throw new OpenGEXException("Error while loading OpenGEX resource " + file, ex);
-            }
-        }
-        Model model = cache.get(file);
-        if(model == null) throw new LoaderException("Error loading cmf previously: " + file);
-        if(!(model.getRoot().getKind() instanceof Mesh))
-        {
-            return new ModelWrapper(modelLocation, model, ImmutableSet.<String>of(), true, true, 1);
-        }
-        return new ModelWrapper(modelLocation, model, ImmutableSet.of(model.getRoot().getName()), true, true, 1);
-    }
-
 }

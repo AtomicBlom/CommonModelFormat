@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;

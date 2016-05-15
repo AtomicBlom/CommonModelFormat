@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import net.minecraft.block.properties.PropertyDirection;
 import net.minecraftforge.fml.common.Mod;
@@ -10,18 +10,18 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 
 
-@Mod(modid = ExampleMod.MODID, version = ExampleMod.VERSION)
-public class ExampleMod
+@Mod(modid = CommonModelFormatExamples.MODID, version = CommonModelFormatExamples.VERSION)
+public class CommonModelFormatExamples
 {
-    public static final String MODID = "examplemod";
-    public static final String VERSION = "0.0";
+    public static final String MODID = "forgecommonmodelformat";
+    public static final String VERSION = "0.1";
 
     public static final PropertyDirection FACING = PropertyDirection.create("facing");
 
     @Instance(MODID)
-    public static ExampleMod instance;
+    public static CommonModelFormatExamples instance;
 
-    @SidedProxy(clientSide = "com.example.examplemod.ClientProxy", serverSide = "com.example.examplemod.ServerProxy")
+    @SidedProxy(clientSide = "net.minecraftforge.commonmodelformat.ClientProxy", serverSide = "net.minecraftforge.commonmodelformat.ServerProxy")
     public static CommonProxy proxy;
 
     @EventHandler

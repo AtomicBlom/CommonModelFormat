@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.util.EnumFacing;
@@ -24,7 +24,7 @@ public class ItemAnimationHolder implements IAnimationHolder
     public ItemAnimationHolder(ResourceLocation itemName)
     {
         this.asmLocation = new ResourceLocation(itemName.getResourceDomain(), "asms/block/" + itemName.getResourcePath() + ".json");
-        ExampleMod.proxy.register(this);
+        CommonModelFormatExamples.proxy.register(this);
     }
 
     @Override

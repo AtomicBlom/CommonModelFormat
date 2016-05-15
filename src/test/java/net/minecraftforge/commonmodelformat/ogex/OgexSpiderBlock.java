@@ -1,7 +1,5 @@
-package com.example.examplemod.ogex;
+package net.minecraftforge.commonmodelformat.ogex;
 
-import com.example.examplemod.ChestBlockBase;
-import com.example.examplemod.Resources;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -10,11 +8,11 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.commonmodelformat.ChestBlockBase;
+import net.minecraftforge.commonmodelformat.Resources;
 
-/**
- * Created by codew on 5/05/2016.
- */
-public class OgexSpiderBlock extends ChestBlockBase {
+public class OgexSpiderBlock extends ChestBlockBase
+{
     public OgexSpiderBlock() {
         super(Resources.OgexBlocks.blockSpiderId);
     }

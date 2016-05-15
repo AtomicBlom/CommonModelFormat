@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.util.ResourceLocation;

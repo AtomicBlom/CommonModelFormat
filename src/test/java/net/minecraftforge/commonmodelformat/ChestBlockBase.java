@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import net.minecraft.block.BlockPistonBase;
 import net.minecraft.block.material.Material;
@@ -25,7 +25,7 @@ public abstract class ChestBlockBase extends ConvenienceBlockBase
     @Override
     public ExtendedBlockState createBlockState()
     {
-        return new ExtendedBlockState(this, new IProperty[]{ExampleMod.FACING, Properties.StaticProperty}, new IUnlistedProperty[]{Properties.AnimationProperty});
+        return new ExtendedBlockState(this, new IProperty[]{CommonModelFormatExamples.FACING, Properties.StaticProperty}, new IUnlistedProperty[]{Properties.AnimationProperty});
     }
 
     @Override
@@ -37,19 +37,19 @@ public abstract class ChestBlockBase extends ConvenienceBlockBase
     @Override
     public IBlockState onBlockPlaced(World world, BlockPos pos, EnumFacing facing, float hitX, float hitY, float hitZ, int meta, EntityLivingBase placer)
     {
-        return this.getDefaultState().withProperty(ExampleMod.FACING, BlockPistonBase.getFacingFromEntity(pos, placer));
+        return this.getDefaultState().withProperty(CommonModelFormatExamples.FACING, BlockPistonBase.getFacingFromEntity(pos, placer));
     }
 
     @Override
     public IBlockState getStateFromMeta(int meta)
     {
-        return getDefaultState().withProperty(ExampleMod.FACING, EnumFacing.getFront(meta));
+        return getDefaultState().withProperty(CommonModelFormatExamples.FACING, EnumFacing.getFront(meta));
     }
 
     @Override
     public int getMetaFromState(IBlockState state)
     {
-        return state.getValue(ExampleMod.FACING).getIndex();
+        return state.getValue(CommonModelFormatExamples.FACING).getIndex();
     }
 
     @Override

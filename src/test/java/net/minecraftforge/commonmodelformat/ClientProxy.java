@@ -1,12 +1,7 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
-import com.example.examplemod.B3D.B3DChestTileEntity;
-import com.example.examplemod.ogex.OgexChestTileEntity;
-import com.example.examplemod.ogex.OgexFanTileEntity;
-import com.example.examplemod.ogex.OgexSpiderTileEntity;
 import com.github.atomicblom.client.model.cmf.b3d.B3DLoader;
 import com.github.atomicblom.client.model.cmf.opengex.OpenGEXLoader;
-import com.google.common.collect.Sets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.resources.IReloadableResourceManager;
@@ -17,10 +12,13 @@ import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.client.model.ModelLoaderRegistry;
 import net.minecraftforge.client.model.animation.AnimationTESR;
 import net.minecraftforge.common.animation.Event;
+import net.minecraftforge.commonmodelformat.B3D.B3DChestTileEntity;
+import net.minecraftforge.commonmodelformat.ogex.OgexChestTileEntity;
+import net.minecraftforge.commonmodelformat.ogex.OgexFanTileEntity;
+import net.minecraftforge.commonmodelformat.ogex.OgexSpiderTileEntity;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -31,8 +29,8 @@ public class ClientProxy extends CommonProxy implements IResourceManagerReloadLi
     public void preInit(FMLPreInitializationEvent event)
     {
         super.preInit(event);
-        B3DLoader.INSTANCE.addDomain(ExampleMod.MODID);
-        OpenGEXLoader.INSTANCE.addDomain(ExampleMod.MODID);
+        B3DLoader.INSTANCE.addDomain(CommonModelFormatExamples.MODID);
+        OpenGEXLoader.INSTANCE.addDomain(CommonModelFormatExamples.MODID);
         ModelLoaderRegistry.registerLoader(B3DLoader.INSTANCE);
         ModelLoaderRegistry.registerLoader(OpenGEXLoader.INSTANCE);
 

@@ -1,20 +1,17 @@
-package com.example.examplemod.ogex;
+package net.minecraftforge.commonmodelformat.ogex;
 
-import com.example.examplemod.AnimationTileEntityBase;
-import com.example.examplemod.ExampleMod;
-import com.example.examplemod.Resources;
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.model.animation.Animation;
 import net.minecraftforge.common.animation.Event;
 import net.minecraftforge.common.animation.ITimeValue;
 import net.minecraftforge.common.animation.TimeValues;
+import net.minecraftforge.commonmodelformat.AnimationTileEntityBase;
+import net.minecraftforge.commonmodelformat.CommonModelFormatExamples;
+import net.minecraftforge.commonmodelformat.Resources;
 
-import static com.example.examplemod.ExampleMod.MODID;
+import static net.minecraftforge.commonmodelformat.CommonModelFormatExamples.MODID;
 
-/**
- * Created by codew on 5/05/2016.
- */
 public class OgexSpiderTileEntity extends AnimationTileEntityBase
 {
     private final TimeValues.VariableValue cycleLength = new TimeValues.VariableValue(4);
@@ -28,7 +25,7 @@ public class OgexSpiderTileEntity extends AnimationTileEntityBase
     public OgexSpiderTileEntity()
     {
         super(new ResourceLocation(MODID, "asms/block/" + Resources.OgexBlocks.blockSpiderId.getResourcePath() + ".json"));
-        ExampleMod.proxy.register(this);
+        CommonModelFormatExamples.proxy.register(this);
     }
 
     public void handleEvents(float time, Iterable<Event> pastEvents)

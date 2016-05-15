@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import com.google.common.collect.ImmutableMap;
 import net.minecraft.util.ResourceLocation;
@@ -6,8 +6,6 @@ import net.minecraftforge.client.model.animation.Animation;
 import net.minecraftforge.common.animation.Event;
 import net.minecraftforge.common.animation.ITimeValue;
 import net.minecraftforge.common.animation.TimeValues;
-
-import static com.example.examplemod.ExampleMod.MODID;
 
 public abstract class ChestTileEntityBase extends AnimationTileEntityBase
 {
@@ -21,7 +19,7 @@ public abstract class ChestTileEntityBase extends AnimationTileEntityBase
     public ChestTileEntityBase(ResourceLocation blockName)
     {
         super(new ResourceLocation(blockName.getResourceDomain(), "asms/block/" + blockName.getResourcePath() + ".json"));
-        ExampleMod.proxy.register(this);
+        CommonModelFormatExamples.proxy.register(this);
     }
 
     @Override

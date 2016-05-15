@@ -1,15 +1,16 @@
-package com.example.examplemod.ogex;
+package net.minecraftforge.commonmodelformat.ogex;
 
-import com.example.examplemod.ChestBlockBase;
-import com.example.examplemod.Resources;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
+import net.minecraftforge.commonmodelformat.ChestBlockBase;
+import net.minecraftforge.commonmodelformat.Resources;
 
 /**
  * Created by codew on 5/05/2016.
  */
-public class OgexChestBlock extends ChestBlockBase {
+public class OgexChestBlock extends ChestBlockBase
+{
     public OgexChestBlock() {
         super(Resources.OgexBlocks.blockChestId);
     }

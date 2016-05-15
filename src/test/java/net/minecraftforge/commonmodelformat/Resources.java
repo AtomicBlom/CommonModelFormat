@@ -1,8 +1,8 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import net.minecraft.util.ResourceLocation;
 
-import static com.example.examplemod.ExampleMod.MODID;
+import static net.minecraftforge.commonmodelformat.CommonModelFormatExamples.MODID;
 
 public class Resources {
     public static class B3DBlocks {

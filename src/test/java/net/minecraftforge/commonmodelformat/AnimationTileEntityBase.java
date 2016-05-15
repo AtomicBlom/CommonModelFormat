@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package net.minecraftforge.commonmodelformat;
 
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;

@@ -35,6 +35,15 @@ public enum OBJToken {
             }
         }
     },
+    CT() {
+      //FIXME: Not sure what CT is
+    },
+    CN() {
+        //FIXME: Not sure what CN is
+    },
+    CTN() {
+        //FIXME: not sure what CTN is
+    },
     VT() {
         @Override
         public Optional<Token> apply(@Nullable String[] input) throws ModelLoaderRegistry.LoaderException {
@@ -58,12 +67,22 @@ public enum OBJToken {
         @Override
         public Optional<Token> apply(@Nullable String[] input) throws ModelLoaderRegistry.LoaderException {
             if(input.length == 1) {
-                return new SetSmoothingGroupStateToken(input[0]);
+                return Optional.<Token>of(new SetSmoothingGroupStateToken(input[0]));
             } else {
-                throw new ModelLoaderRegistry.LoaderException("attempt to create texture coordinate set out of " + input.length + "elements");
+                throw new ModelLoaderRegistry.LoaderException("attempt to create texture coordinate set out of " + input.length + " elements");
             }
         }
-    }
+    },
+    O() {
+        @Override
+        public Optional<Token> apply(@Nullable String[] input) throws ModelLoaderRegistry.LoaderException {
+            if (input.length == 1) {
+                return Optional.<Token>of(new ObjectToken(input[0]));
+            } else {
+                throw new ModelLoaderRegistry.LoaderException("attempt to create an object with " + input.length + " parameters");
+            }
+        }
+    },
     COMMENT() {
         @Override
         public Optional<Token> apply(String[] input)
@@ -73,7 +92,7 @@ public enum OBJToken {
     },
     ENDOFFILE;
 
-    public Optional<Token> apply(@Nullable String[] input) throws ModelLoaderRegistry.LoaderException {
+    public Optional<Token> apply(String[] input) throws ModelLoaderRegistry.LoaderException {
         return Optional.absent();
     }
 

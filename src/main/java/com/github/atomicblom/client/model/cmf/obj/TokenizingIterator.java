@@ -41,12 +41,15 @@ public class TokenizingIterator implements Iterator<Token>
         final String line;
         try
         {
-            line = reader.readLine();
-
+            line = reader.readLine().trim();
+            if ("".equals(line)) {
+                return new BlankLineToken();
+            }
             final String[] elements = seperatorPattern.split(line);
             if (elements.length == 0) {
                 //skip element
             }
+
             final OBJToken objToken = OBJToken.valueOf(elements[0].toUpperCase());
             return objToken.apply(Arrays.copyOf(elements, 1));
 
